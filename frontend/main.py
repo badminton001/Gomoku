@@ -6,7 +6,7 @@ class GomokuUI:
         self.root.title("Gomoku AI")
         self.root.geometry("800x600")
         
-        # »ù´¡±êÇ©
+        # Game initialization
         label = tk.Label(root, text="Gomoku AI System", font=("Arial", 20))
         label.pack(pady=20)
 
