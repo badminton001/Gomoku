@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict, Any, Optional
-from board import Board
+from backend.models.board import Board
 
 class GameEngine:
 

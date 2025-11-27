@@ -1,4 +1,4 @@
-from board import Board
+from backend.models.board import Board
 
 def test_horizontal_win():
     b = Board()
