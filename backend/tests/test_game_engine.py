@@ -1,4 +1,4 @@
-from game_engine import GameEngine
+from backend.models.game_engine import GameEngine
 
 # 测试：同一玩家（黑子）在一行连下五子，应该判定黑子获胜
 def test_black_five_in_row():

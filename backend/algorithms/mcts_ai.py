@@ -1,22 +1,19 @@
 import math
 import random
 import time
-import pickle
 import copy
-from typing import List, Tuple, Dict, Optional
-from board import Board
+from typing import List, Tuple
+from backend.models.board import Board
 
 
-# 获取候选步：棋盘现有棋子周围distance距离内的空位
 def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
-    """
-    减少搜索空间：只看棋子附近的空位，空盘则返回中心点。
-    """
+    """获取棋子周围distance距离内的空位，空盘返回中心"""
     if board.move_count == 0:
         return [(board.size // 2, board.size // 2)]
 
     moves = set()
     size = board.size
+
     existing_stones = []
     for x in range(size):
         for y in range(size):
@@ -33,7 +30,6 @@ def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]
     return list(moves)
 
 
-# MCTS 树节点
 class MCTSNode:
     def __init__(self, parent=None, move=None, player_just_moved=None):
         self.parent = parent
@@ -45,7 +41,7 @@ class MCTSNode:
         self.untried_moves: List[Tuple[int, int]] = []
 
     def uct_select_child(self, exploration_weight=1.414):
-        """UCB1 公式选择子节点"""
+        """UCB1公式选择子节点"""
         s = sorted(self.children,
                    key=lambda c: c.wins / c.visits + exploration_weight * math.sqrt(math.log(self.visits) / c.visits))
         return s[-1]
@@ -58,7 +54,7 @@ class MCTSNode:
         return n
 
     def update(self, result):
-        """更新节点访问和胜利次数"""
+        """更新访问计数和胜利计数"""
         self.visits += 1
         if self.player_just_moved == result:
             self.wins += 1.0
@@ -72,7 +68,7 @@ class MCTSAgent:
         self.max_iterations = max_iterations
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
-        """MCTS 求解"""
+        """MCTS主算法"""
         root = MCTSNode(player_just_moved=3 - player)
         root.untried_moves = get_neighbor_moves(board)
 
@@ -130,97 +126,10 @@ class MCTSAgent:
             count += 1
 
         if not root.children:
-            return random.choice(get_neighbor_moves(board))
+            moves = get_neighbor_moves(board)
+            if moves:
+                return random.choice(moves)
+            return (0, 0)
 
         best_child = sorted(root.children, key=lambda c: c.visits)[-1]
         return best_child.move
-
-
-# Q-Learning 智能体
-class QLearningAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.1):
-        self.q_table: Dict[str, float] = {}
-        self.alpha = alpha
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.last_state = None
-        self.last_action = None
-
-    def get_state_key(self, board: Board) -> str:
-        """棋盘转为字符串状态"""
-        return board.to_string()
-
-    def get_qa_key(self, state: str, action: Tuple[int, int]) -> str:
-        """状态-动作 Key"""
-        return f"{state}|{action[0]},{action[1]}"
-
-    def get_q(self, state: str, action: Tuple[int, int]) -> float:
-        return self.q_table.get(self.get_qa_key(state, action), 0.0)
-
-    def set_q(self, state: str, action: Tuple[int, int], value: float):
-        self.q_table[self.get_qa_key(state, action)] = value
-
-    def get_move(self, board: Board, player: int, training: bool = False) -> Tuple[int, int]:
-        """获取动作"""
-        moves = get_neighbor_moves(board)
-        if not moves:
-            return (7, 7)
-
-        state = self.get_state_key(board)
-
-        # Epsilon-Greedy
-        if training and random.random() < self.epsilon:
-            action = random.choice(moves)
-        else:
-            random.shuffle(moves)
-            best_move = moves[0]
-            max_q = -float('inf')
-
-            for move in moves:
-                q = self.get_q(state, move)
-                if q > max_q:
-                    max_q = q
-                    best_move = move
-            action = best_move
-
-        if training:
-            self.last_state = state
-            self.last_action = action
-
-        return action
-
-    def learn(self, current_board: Board, reward: float):
-        """Q值更新"""
-        if self.last_state is None or self.last_action is None:
-            return
-
-        current_state = self.get_state_key(current_board)
-
-        moves = get_neighbor_moves(current_board)
-        max_next_q = 0.0
-        if moves:
-            max_next_q = max([self.get_q(current_state, m) for m in moves])
-
-        old_q = self.get_q(self.last_state, self.last_action)
-        new_q = old_q + self.alpha * (reward + self.gamma * max_next_q - old_q)
-        self.set_q(self.last_state, self.last_action, new_q)
-
-    def save_model(self, filename="q_model.pkl"):
-        """保存Q表"""
-        try:
-            with open(filename, 'wb') as f:
-                pickle.dump(self.q_table, f)
-            print(f"Model saved to {filename}, Size: {len(self.q_table)} entries")
-        except Exception as e:
-            print(f"Error saving model: {e}")
-
-    def load_model(self, filename="q_model.pkl"):
-        """加载Q表"""
-        try:
-            with open(filename, 'rb') as f:
-                self.q_table = pickle.load(f)
-            print(f"Model loaded from {filename}, Size: {len(self.q_table)} entries")
-        except FileNotFoundError:
-            print("Model file not found, starting with empty Q-table.")
-        except Exception as e:
-            print(f"Error loading model: {e}")

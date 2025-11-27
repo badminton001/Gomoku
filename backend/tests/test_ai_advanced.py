@@ -1,7 +1,7 @@
 import unittest
 import os
-from board import Board
-from ai_advanced import MCTSAgent, QLearningAgent, get_neighbor_moves
+from backend.models.board import Board
+from backend.algorithms.ai_advanced import MCTSAgent, QLearningAgent, get_neighbor_moves
 
 
 class TestAI(unittest.TestCase):
