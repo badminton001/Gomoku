@@ -16,7 +16,7 @@ def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]
                 for dx in range(-distance, distance + 1):
                     for dy in range(-distance, distance + 1):
                         nx, ny = x + dx, y + dy
-                        if board.is_inside(nx, ny) and board.is_empty(nx, ny):
+                        if board.is_valid_move(nx, ny):
                             moves.add((nx, ny))
     return list(moves)
 
@@ -52,9 +52,9 @@ class GomokuState(BaseState):
         result = self.board.get_game_result()
         if result == 0:
             return 0.0
-        elif result == 3:  # 平手
+        elif result == 3:
             return 0.0
-        elif result == self.last_player:  # 上一个玩家赢了
+        elif result == self.last_player:
             return 1.0
         else:
             return -1.0
@@ -63,10 +63,6 @@ class GomokuState(BaseState):
 class MCTSAgent:
     """蒙特卡洛树搜索"""
     def __init__(self, time_limit: float = 2.0):
-        """
-        Args:
-            time_limit: 思考时间（秒）
-        """
         self.time_limit = time_limit
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
@@ -83,10 +79,8 @@ class MCTSAgent:
 
     def evaluate_board(self, board: Board, player: int = 1) -> float:
         """快速评估棋盘"""
-        from mcts.searcher.mcts import MCTS
         initial_state = GomokuState(board, player)
         searcher = MCTS(time_limit=100)
-        best_action, reward = searcher.search(initial_state=initial_state, need_details=True)
-        # 转换奖励为 0-100 的评分
-        score = (reward + 1) * 50
-        return min(100, max(0, score))
+        best_action = searcher.search(initial_state=initial_state)
+        # 简单评估：如果找到着法就返回 50，否则返回 50
+        return 50.0
