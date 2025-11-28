@@ -1,0 +1,8 @@
+algorithms:
+  mcts:
+    name: "Monte Carlo Tree Search"
+    enabled: true
+    time_limit: 2000          # 毫秒
+    iteration_limit: 1000
+    exploration_weight: 1.414
+    neighbor_distance: 2

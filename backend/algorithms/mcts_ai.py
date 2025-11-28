@@ -1,135 +1,92 @@
-import math
-import random
-import time
 import copy
 from typing import List, Tuple
 from backend.models.board import Board
+from mcts.base.base import BaseState
+from mcts.searcher.mcts import MCTS
 
 
 def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
-    """获取棋子周围distance距离内的空位，空盘返回中心"""
+    """获取棋子周围distance范围内的空位"""
     if board.move_count == 0:
         return [(board.size // 2, board.size // 2)]
-
     moves = set()
-    size = board.size
-
-    existing_stones = []
-    for x in range(size):
-        for y in range(size):
+    for x in range(board.size):
+        for y in range(board.size):
             if not board.is_empty(x, y):
-                existing_stones.append((x, y))
-
-    for (sx, sy) in existing_stones:
-        for dx in range(-distance, distance + 1):
-            for dy in range(-distance, distance + 1):
-                nx, ny = sx + dx, sy + dy
-                if board.is_inside(nx, ny) and board.is_empty(nx, ny):
-                    moves.add((nx, ny))
-
+                for dx in range(-distance, distance + 1):
+                    for dy in range(-distance, distance + 1):
+                        nx, ny = x + dx, y + dy
+                        if board.is_inside(nx, ny) and board.is_empty(nx, ny):
+                            moves.add((nx, ny))
     return list(moves)
 
 
-class MCTSNode:
-    def __init__(self, parent=None, move=None, player_just_moved=None):
-        self.parent = parent
-        self.move = move
-        self.player_just_moved = player_just_moved
-        self.children: List[MCTSNode] = []
-        self.wins = 0.0
-        self.visits = 0
-        self.untried_moves: List[Tuple[int, int]] = []
+class GomokuState(BaseState):
+    """五子棋游戏状态"""
+    def __init__(self, board: Board, current_player: int, last_player: int = None):
+        self.board = copy.deepcopy(board)
+        self.current_player = current_player
+        self.last_player = last_player
 
-    def uct_select_child(self, exploration_weight=1.414):
-        """UCB1公式选择子节点"""
-        s = sorted(self.children,
-                   key=lambda c: c.wins / c.visits + exploration_weight * math.sqrt(math.log(self.visits) / c.visits))
-        return s[-1]
+    def get_current_player(self) -> int:
+        """返回当前玩家（1 或 -1）"""
+        return 1 if self.current_player == 1 else -1
 
-    def add_child(self, move, player_just_moved):
-        """添加子节点"""
-        n = MCTSNode(parent=self, move=move, player_just_moved=player_just_moved)
-        self.children.append(n)
-        self.untried_moves.remove(move)
-        return n
+    def get_possible_actions(self) -> List[Tuple[int, int]]:
+        """返回所有合法着法"""
+        return get_neighbor_moves(self.board)
 
-    def update(self, result):
-        """更新访问计数和胜利计数"""
-        self.visits += 1
-        if self.player_just_moved == result:
-            self.wins += 1.0
-        elif result == 3:
-            self.wins += 0.5
+    def take_action(self, action: Tuple[int, int]) -> "GomokuState":
+        """执行着法，返回新状态"""
+        new_board = copy.deepcopy(self.board)
+        new_board.place_stone(action, action, self.current_player)
+        next_player = 3 - self.current_player
+        return GomokuState(new_board, next_player, self.current_player)
+
+    def is_terminal(self) -> bool:
+        """检查游戏是否结束"""
+        return self.board.get_game_result() != 0
+
+    def get_reward(self) -> float:
+        """返回奖励值"""
+        result = self.board.get_game_result()
+        if result == 0:
+            return 0.0
+        elif result == 3:  # 平手
+            return 0.0
+        elif result == self.last_player:  # 上一个玩家赢了
+            return 1.0
+        else:
+            return -1.0
 
 
 class MCTSAgent:
-    def __init__(self, time_limit: float = 2.0, max_iterations: int = 1000):
+    """蒙特卡洛树搜索"""
+    def __init__(self, time_limit: float = 2.0):
+        """
+        Args:
+            time_limit: 思考时间（秒）
+        """
         self.time_limit = time_limit
-        self.max_iterations = max_iterations
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
-        """MCTS主算法"""
-        root = MCTSNode(player_just_moved=3 - player)
-        root.untried_moves = get_neighbor_moves(board)
-
-        start_time = time.time()
-        count = 0
-
-        while count < self.max_iterations:
-            if time.time() - start_time > self.time_limit:
-                break
-
-            node = root
-            sim_board = copy.deepcopy(board)
-
-            # Selection
-            while node.untried_moves == [] and node.children != []:
-                node = node.uct_select_child()
-                sim_board.place_stone(node.move[0], node.move[1], node.player_just_moved)
-
-            # Expansion
-            if node.untried_moves != []:
-                m = random.choice(node.untried_moves)
-                current_p = 3 - node.player_just_moved
-                sim_board.place_stone(m[0], m[1], current_p)
-                node = node.add_child(m, current_p)
-
-            # Simulation
-            sim_player = 3 - node.player_just_moved
-            depth = 0
-            while True:
-                status = sim_board.get_game_result()
-                if status != 0:
-                    break
-
-                candidates = get_neighbor_moves(sim_board)
-                if not candidates:
-                    break
-
-                move = random.choice(candidates)
-                sim_board.place_stone(move[0], move[1], sim_player)
-                sim_player = 3 - sim_player
-
-                depth += 1
-                if depth > 30:
-                    break
-
-            # Backpropagation
-            final_result = sim_board.get_game_result()
-            if final_result == 0:
-                final_result = 3
-
-            while node is not None:
-                node.update(final_result)
-                node = node.parent
-
-            count += 1
-
-        if not root.children:
+        """获取最优着法"""
+        initial_state = GomokuState(board, player)
+        searcher = MCTS(time_limit=int(self.time_limit * 1000))
+        best_action = searcher.search(initial_state=initial_state)
+        if best_action is None:
             moves = get_neighbor_moves(board)
             if moves:
-                return random.choice(moves)
-            return (0, 0)
+                return moves
+            return (board.size // 2, board.size // 2)
+        return best_action
 
-        best_child = sorted(root.children, key=lambda c: c.visits)[-1]
-        return best_child.move
+    def evaluate_board(self, board: Board, player: int = 1) -> float:
+        """快速评估棋盘"""
+        from mcts.searcher.mcts import MCTS
+        initial_state = GomokuState(board, player)
+        searcher = MCTS(time_limit=100)
+        best_action, reward = searcher.search(initial_state=initial_state, need_details=True)
+        # 转换奖励为 0-100 的评分
+        score = (reward + 1) * 50
+        return min(100, max(0, score))
