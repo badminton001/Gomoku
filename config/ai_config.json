@@ -1,0 +1,16 @@
+{
+  "neighbor_distance": 2,
+  "greedy": {
+    "distance": 2
+  },
+  "minimax": {
+    "depth": 2,
+    "distance": 2,
+    "candidate_limit": 12
+  },
+  "alpha_beta": {
+    "depth": 3,
+    "distance": 2,
+    "candidate_limit": 12
+  }
+}
