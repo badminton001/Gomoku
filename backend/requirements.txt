@@ -1,8 +1,6 @@
 fastapi==0.104.0
 uvicorn==0.24.0
-numpy==1.24.0
-matplotlib==3.8.0
-pandas==2.0.0
+matplotlib
+pandas
 requests==2.31.0
-pygame==2.5.0
-monte-carlo-tree-search>=3.0.0
+monte-carlo-tree-search
