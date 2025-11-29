@@ -17,7 +17,7 @@ from ui.board_ui import BoardUI
 def main():
     root = tk.Tk()
     root.title("Gomoku - 五子棋对战 (Person F)")
-    root.geometry("700x750")  # 稍微拉高一点，底部留点空间显示提示信息
+    root.geometry("900x750")  # 稍微拉高一点，底部留点空间显示提示信息
 
     app = BoardUI(master=root)
 
