@@ -1,26 +1,26 @@
-# 文件位置: frontend/ui/ai_recommender.py
+# File location: frontend/ui/ai_recommender.py
 class AiRecommender:
     def __init__(self, canvas, cell_size):
         self.canvas = canvas
         self.cell_size = cell_size
-        self.hint_tag = "ai_hint_marker"  # 专门给提示框打个标签，方便删除
+        self.hint_tag = "ai_hint_marker"  # Special tag for hint box, easy to delete
 
     def show_hint(self, x, y):
-        """在指定位置画一个闪烁的红色方框"""
-        self.clear_hint()  # 先清除旧的提示
+        """Draw a flashing red square at the specified position"""
+        self.clear_hint()  # Clear old hint first
 
         margin = self.cell_size
         cx = margin + x * self.cell_size
         cy = margin + y * self.cell_size
 
-        # 画一个比格子稍微小一点的红框
+        # Draw a red square slightly smaller than the grid
         r = self.cell_size * 0.45
         self.canvas.create_rectangle(
             cx - r, cy - r, cx + r, cy + r,
             outline="red", width=3, tags=self.hint_tag
         )
-        print(f"UI层：已在 ({x}, {y}) 显示推荐红框")
+        print(f"UI layer: Recommended red square displayed at ({x}, {y})")
 
     def clear_hint(self):
-        """清除棋盘上的提示框"""
+        """Clear the hint box on the chessboard"""
         self.canvas.delete(self.hint_tag)
