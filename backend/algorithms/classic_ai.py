@@ -1,28 +1,42 @@
+import json
 import math
 import random
 import time
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from backend.models.board import Board
 from backend.algorithms.mcts_ai import get_neighbor_moves
+from backend.models.board import Board
 
 
 @dataclass
 class SearchMetrics:
-    """Lightweight search statistics."""
+    """Lightweight search statistics for benchmarking."""
 
     elapsed_ms: float
     explored_nodes: int
     candidate_moves: int
 
 
-def random_move(board: Board) -> Tuple[int, int]:
+def load_ai_config(path: str) -> Dict[str, Any]:
     """
-    Return a random legal move near existing stones.
+    Load hyperparameter configuration from a JSON file.
+    YAML can be supported by converting to JSON or installing PyYAML, but JSON keeps dependencies minimal.
+    """
+    config_path = Path(path)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+    with config_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def random_move(board: Board, distance: int = 2) -> Tuple[int, int]:
+    """
+    Return a random legal move near existing stones (distance-limited neighborhood).
     Falls back to board center if nothing is available.
     """
-    candidates = get_neighbor_moves(board)
+    candidates = get_neighbor_moves(board, distance=distance)
     if not candidates:
         center = (board.size // 2, board.size // 2)
         return center
@@ -81,6 +95,7 @@ def evaluate_board(board: Board, player: int) -> float:
 
     player_score = score_for(player)
     opponent_score = score_for(3 - player)
+    # Slightly penalize opponent to emphasize defense
     return player_score - 1.1 * opponent_score
 
 
@@ -117,7 +132,9 @@ class GreedyAgent:
                 best_move = move
 
         elapsed_ms = (time.perf_counter() - start) * 1000
-        self.last_metrics = SearchMetrics(elapsed_ms=elapsed_ms, explored_nodes=explored, candidate_moves=len(candidates))
+        self.last_metrics = SearchMetrics(
+            elapsed_ms=elapsed_ms, explored_nodes=explored, candidate_moves=len(candidates)
+        )
         return best_move
 
 
@@ -159,7 +176,9 @@ class MinimaxAgent:
             ordered.append((board.size // 2, board.size // 2))
         return ordered
 
-    def _minimax(self, board: Board, depth: int, current_player: int, max_player: int) -> Tuple[float, Optional[Tuple[int, int]]]:
+    def _minimax(
+        self, board: Board, depth: int, current_player: int, max_player: int
+    ) -> Tuple[float, Optional[Tuple[int, int]]]:
         self._nodes += 1
         result = board.get_game_result()
         if result == max_player:
@@ -206,8 +225,12 @@ class MinimaxAgent:
         _, move = self._minimax(board, self.depth, player, player)
         elapsed_ms = (time.perf_counter() - start) * 1000
         if move is None:
-            move = random_move(board)
-        self.last_metrics = SearchMetrics(elapsed_ms=elapsed_ms, explored_nodes=self._nodes, candidate_moves=len(get_neighbor_moves(board, self.distance)))
+            move = random_move(board, distance=self.distance)
+        self.last_metrics = SearchMetrics(
+            elapsed_ms=elapsed_ms,
+            explored_nodes=self._nodes,
+            candidate_moves=len(get_neighbor_moves(board, self.distance)),
+        )
         return move
 
 
@@ -309,6 +332,10 @@ class AlphaBetaAgent:
         _, move = self._alphabeta(board, self.depth, -math.inf, math.inf, player, player)
         elapsed_ms = (time.perf_counter() - start) * 1000
         if move is None:
-            move = random_move(board)
-        self.last_metrics = SearchMetrics(elapsed_ms=elapsed_ms, explored_nodes=self._nodes, candidate_moves=len(get_neighbor_moves(board, self.distance)))
+            move = random_move(board, distance=self.distance)
+        self.last_metrics = SearchMetrics(
+            elapsed_ms=elapsed_ms,
+            explored_nodes=self._nodes,
+            candidate_moves=len(get_neighbor_moves(board, self.distance)),
+        )
         return move
