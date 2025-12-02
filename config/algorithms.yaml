@@ -6,3 +6,10 @@ algorithms:
     iteration_limit: 1000
     exploration_weight: 1.414
     neighbor_distance: 2
+
+qlearning:
+  name: "Q-Learning (DQN)"
+  model_path: "models/dqn_gomoku"
+  learning_rate: 0.0001
+  buffer_size: 100000
+  gamma: 0.99
