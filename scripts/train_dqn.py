@@ -9,7 +9,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 def train():
-    BOARD_SIZE = 6
+    BOARD_SIZE = 15
     
     MODEL_PATH = f"models/dqn_gomoku_{BOARD_SIZE}x{BOARD_SIZE}"
     
