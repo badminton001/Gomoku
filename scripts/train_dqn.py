@@ -2,76 +2,76 @@ import sys
 import os
 import yaml
 import torch
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.algorithms.qlearning_ai import GomokuEnv
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import CheckpointCallback
 
-def load_config():
-    config_path = os.path.join("config", "algorithms.yaml")
-    if not os.path.exists(config_path):
-        return {}
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
-
 def train():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Device: {device.upper()}")
-    if device == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
+    BOARD_SIZE = 6
     
-    config = load_config()
-    dqn_config = config.get("algorithms", {}).get("qlearning", {})
-    model_path = dqn_config.get("model_path", "models/dqn_gomoku")
+    MODEL_PATH = f"models/dqn_gomoku_{BOARD_SIZE}x{BOARD_SIZE}"
     
-    total_timesteps = 1_000_000
-    continue_training = True
-
-    env = GomokuEnv(board_size=15)
-    
-    model = None
-    
-    if continue_training and os.path.exists(model_path + ".zip"):
-        print(f"Loading model: {model_path}.zip")
-        model = DQN.load(model_path, env=env, device=device)
+    if BOARD_SIZE <= 10:
+        TOTAL_TIMESTEPS = 200_000
+        policy_kwargs = None
+        batch_size = 256
+        buffer_size = 50000
+        learning_starts = 1000
     else:
-        print("Creating new model...")
+        TOTAL_TIMESTEPS = 5_000_000
+        policy_kwargs = dict(net_arch=[512, 512, 256])
+        batch_size = 512
+        buffer_size = 200000
+        learning_starts = 50000
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f">>> Mode: {BOARD_SIZE}x{BOARD_SIZE} | Device: {device.upper()}")
+
+    env = GomokuEnv(board_size=BOARD_SIZE)
+
+    if os.path.exists(MODEL_PATH + ".zip"):
+        print(f">>> Loading existing model: {MODEL_PATH}")
+        model = DQN.load(MODEL_PATH, env=env, device=device)
+        reset_timesteps = False
+    else:
+        print(f">>> Creating NEW model for {BOARD_SIZE}x{BOARD_SIZE}...")
         model = DQN(
             "MlpPolicy", 
             env, 
             verbose=1,
             device=device,
-            batch_size=256,
-            buffer_size=100000,
-            learning_rate=dqn_config.get("learning_rate", 1e-4),
-            learning_starts=5000,
-            gamma=dqn_config.get("gamma", 0.99),
-            exploration_fraction=0.1,
+            policy_kwargs=policy_kwargs,
+            batch_size=batch_size,
+            buffer_size=buffer_size,
+            learning_rate=1e-4,
+            learning_starts=learning_starts,
+            gamma=0.995 if BOARD_SIZE > 10 else 0.95,
+            target_update_interval=2000 if BOARD_SIZE > 10 else 500,
+            exploration_fraction=0.2,
             exploration_final_eps=0.05,
-            tensorboard_log="./data/logs/dqn_tensorboard/"
+            tensorboard_log=f"./data/logs/dqn_{BOARD_SIZE}x{BOARD_SIZE}_tensorboard/"
         )
-    
+        reset_timesteps = True
+
     checkpoint_callback = CheckpointCallback(
-        save_freq=50000,
-        save_path='./data/models/checkpoints/',
-        name_prefix='dqn_run'
+        save_freq=50000, 
+        save_path=f'./data/models/checkpoints_{BOARD_SIZE}x{BOARD_SIZE}/',
+        name_prefix=f'dqn_{BOARD_SIZE}x{BOARD_SIZE}'
     )
-    
-    print(f"Training for {total_timesteps} steps...")
     
     try:
         model.learn(
-            total_timesteps=total_timesteps, 
-            callback=checkpoint_callback,
-            reset_num_timesteps=not continue_training 
+            total_timesteps=TOTAL_TIMESTEPS, 
+            callback=checkpoint_callback, 
+            reset_num_timesteps=reset_timesteps
         )
     except KeyboardInterrupt:
-        print("Training interrupted.")
+        print("Interrupted.")
         
-    model.save(model_path)
-    print(f"Model saved: {model_path}.zip")
+    model.save(MODEL_PATH)
+    print("Saved.")
 
 if __name__ == "__main__":
     train()
