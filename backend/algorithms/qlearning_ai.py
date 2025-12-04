@@ -2,7 +2,7 @@ import os
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -13,7 +13,6 @@ from backend.models.board import Board
 
 class GomokuEnv(gym.Env):
     """五子棋 Gymnasium 环境"""
-    
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, board_size=15, opponent_ai=None):
@@ -46,6 +45,7 @@ class GomokuEnv(gym.Env):
             else:
                 return self._get_obs(), 0.0, True, False, {}
 
+        opp_x, opp_y = -1, -1
         if self.opponent_ai:
             try:
                 move = self.opponent_ai.get_move(self.engine.board, self.engine.current_player)
@@ -56,7 +56,7 @@ class GomokuEnv(gym.Env):
             opp_x, opp_y = self._random_empty_move()
             
         if opp_x != -1:
-            self.engine.make_move_for(opp_x, opp_y, self.engine.current_player)
+            self.engine.make_move(opp_x, opp_y)
 
         if self.engine.game_over:
             if self.engine.winner == 2:
@@ -93,39 +93,15 @@ class QLearningAgent:
         self.load_model()
         
         if self.model is None and not train_mode:
-            print("[DQN] Warning: Model not found")
+            print(f"[DQN] No model at {self.model_path}")
 
     def load_model(self):
         if os.path.exists(self.model_path + ".zip"):
             try:
                 self.model = DQN.load(self.model_path)
-                print(f"[DQN] Model loaded: {self.model_path}")
+                print(f"[DQN] Loaded {self.model_path}")
             except Exception as e:
                 print(f"[DQN] Load failed: {e}")
-
-    def train(self, total_timesteps: int = 100000, opponent_ai=None):
-        """训练模型"""
-        env = GomokuEnv(opponent_ai=opponent_ai)
-        
-        self.model = DQN(
-            policy="MlpPolicy",
-            env=env,
-            learning_rate=0.0001,
-            buffer_size=100000,
-            learning_starts=1000,
-            batch_size=32,
-            gamma=0.99,
-            exploration_fraction=0.1,
-            exploration_initial_eps=1.0,
-            exploration_final_eps=0.05,
-            verbose=1
-        )
-        
-        os.makedirs(os.path.dirname(self.model_path) or ".", exist_ok=True)
-        
-        self.model.learn(total_timesteps=total_timesteps)
-        self.model.save(self.model_path)
-        print(f"[DQN] Model saved: {self.model_path}")
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
         """获取着法"""
@@ -145,7 +121,7 @@ class QLearningAgent:
         return (x, y)
 
     def evaluate_board(self, board: Board, player: int) -> float:
-        """评估棋盘（0-100）"""
+        """评估棋盘状态 (0-100)"""
         if self.model is None:
             return 50.0
 
