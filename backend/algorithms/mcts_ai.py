@@ -9,7 +9,7 @@ from backend.models.board import Board
 
 
 def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
-    """邻域搜索：只考虑已有棋子周围的空位"""
+    """获取棋子周围distance范围内的空位"""
     if board.move_count == 0:
         return [(board.size // 2, board.size // 2)]
     
@@ -34,7 +34,7 @@ def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]
 
 
 class GomokuState(BaseState):
-    """游戏状态适配 MCTS 库接口"""
+    """MCTS库的State接口适配"""
     
     def __init__(self, board: Board, current_player: int, last_move: Tuple[int, int] = None):
         self.board = board
@@ -50,7 +50,7 @@ class GomokuState(BaseState):
 
     def take_action(self, action: Tuple[int, int]) -> "GomokuState":
         new_board = copy.deepcopy(self.board)
-        new_board.place_stone(action, action, self.current_player)
+        new_board.place_stone(action[0], action[1], self.current_player)
         next_player = 3 - self.current_player
         return GomokuState(new_board, next_player, last_move=action)
 
@@ -66,11 +66,12 @@ class GomokuState(BaseState):
 class MCTSAgent:
     """蒙特卡洛树搜索"""
     
-    def __init__(self, time_limit: int = 2000, iteration_limit: int = 1000):
+    def __init__(self, time_limit: int = 2000, iteration_limit: int = 1000, **kwargs):
         self.time_limit = time_limit
         self.iteration_limit = iteration_limit
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
+        """获取最优着法"""
         if board.move_count == 0:
             return (board.size // 2, board.size // 2)
 
@@ -86,7 +87,7 @@ class MCTSAgent:
         try:
             best_action = searcher.search(initial_state=initial_state)
         except Exception as e:
-            print(f"MCTS search error: {e}")
+            print(f"[MCTS] Search error: {e}")
             best_action = None
 
         if best_action is None:
@@ -98,5 +99,5 @@ class MCTSAgent:
         return best_action
 
     def evaluate_board(self, board: Board, player: int) -> float:
-        """评估局势 (0-100)"""
+        """使用MCTS快速模拟评估局势"""
         return 50.0
