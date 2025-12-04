@@ -63,7 +63,7 @@ def plot_curves(data):
         plt.legend()
 
     plt.tight_layout()
-    
+
     output_path = 'data/results/training_curve.png'
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300)
@@ -72,9 +72,9 @@ def plot_curves(data):
 
 
 if __name__ == "__main__":
-    log_dir = "./data/logs/dqn_tensorboard/"
+    log_dir = "./data/logs/dqn_15x15_tensorboard/"
     if os.path.exists(log_dir):
         data = extract_tensorboard_data(log_dir)
         plot_curves(data)
     else:
-        print(f"Log directory {log_dir} does not exist. Did you run train_dqn.py?")
+        print(f"Log directory {log_dir} does not exist. Please check your training script settings.")
