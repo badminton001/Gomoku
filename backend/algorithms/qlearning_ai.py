@@ -1,123 +1,190 @@
-import random
-import pickle
-from typing import List, Tuple, Dict
+import os
+import numpy as np
+import gymnasium as gym
+from gymnasium import spaces
+from typing import Tuple, Optional
+
+from stable_baselines3 import DQN
+from stable_baselines3.common.callbacks import CheckpointCallback
+
+from backend.models.game_engine import GameEngine
 from backend.models.board import Board
 
 
-def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
-    """获取棋子周围distance距离内的空位，空盘返回中心"""
-    if board.move_count == 0:
-        return [(board.size // 2, board.size // 2)]
+class GomokuEnv(gym.Env):
+    def __init__(self, board_size=15, opponent_ai=None):
+        super().__init__()
+        self.board_size = board_size
+        self.engine = GameEngine(size=board_size)
+        self.opponent_ai = opponent_ai
+        
+        self.observation_space = spaces.Box(low=0, high=2, shape=(board_size, board_size), dtype=np.float32)
+        self.action_space = spaces.Discrete(board_size * board_size)
 
-    moves = set()
-    size = board.size
-    existing_stones = []
-    for x in range(size):
-        for y in range(size):
-            if not board.is_empty(x, y):
-                existing_stones.append((x, y))
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        self.engine.reset_game()
+        return self._get_obs(), {}
 
-    for (sx, sy) in existing_stones:
-        for dx in range(-distance, distance + 1):
-            for dy in range(-distance, distance + 1):
-                nx, ny = sx + dx, sy + dy
-                if board.is_inside(nx, ny) and board.is_empty(nx, ny):
-                    moves.add((nx, ny))
+    def step(self, action: int):
+        x, y = divmod(int(action), self.board_size)
+        
+        if not self.engine.board.is_valid_move(x, y):
+            return self._get_obs(), -50.0, True, False, {"error": "Invalid"}
 
-    return list(moves)
+        self.engine.make_move(x, y) 
+
+        current_reward = 0.0
+        done = False
+        
+        if self.engine.game_over:
+            if self.engine.winner == 1:
+                current_reward = 100.0
+                done = True
+            else:
+                current_reward = 0.0
+                done = True
+        else:
+            if self.engine.board.move_count < 10:
+                center = self.board_size // 2
+                dist = abs(x - center) + abs(y - center)
+                if dist < 4:
+                    current_reward += 0.5
+
+            current_reward += self._calculate_heuristic_reward(x, y, player=1)
+
+        if done:
+            return self._get_obs(), current_reward, done, False, {}
+
+        opp_x, opp_y = self._random_empty_move()
+        if opp_x != -1:
+            self.engine.make_move(opp_x, opp_y)
+
+        if self.engine.game_over:
+            if self.engine.winner == 2:
+                return self._get_obs(), -100.0, True, False, {}
+            else:
+                return self._get_obs(), 0.0, True, False, {}
+
+        return self._get_obs(), current_reward, False, False, {}
+
+    def _calculate_heuristic_reward(self, x, y, player):
+        score = 0.0
+        board = self.engine.board
+        
+        directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+        for dx, dy in directions:
+            count = 1
+            tx, ty = x + dx, y + dy
+            while board.is_inside(tx, ty) and board.board[tx][ty] == player:
+                count += 1
+                tx += dx
+                ty += dy
+            tx, ty = x - dx, y - dy
+            while board.is_inside(tx, ty) and board.board[tx][ty] == player:
+                count += 1
+                tx -= dx
+                ty -= dy
+            
+            if count == 4:
+                score += 10.0
+            elif count == 3:
+                score += 2.0
+            elif count == 2:
+                score += 0.5
+
+        return score
+
+    def _get_obs(self):
+        return np.array(self.engine.board.board, dtype=np.float32)
+
+    def _random_empty_move(self):
+        import random
+        empty = []
+        for i in range(self.board_size):
+            for j in range(self.board_size):
+                if self.engine.board.board[i][j] == 0:
+                    empty.append((i, j))
+        if not empty: 
+            return -1, -1
+        return random.choice(empty)
+
+    def render(self):
+        self.engine.debug_print_board()
 
 
 class QLearningAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.1):
-        self.q_table: Dict[str, float] = {}
-        self.alpha = alpha
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.last_state = None
-        self.last_action = None
+    """DQN 代理"""
+    
+    def __init__(self, model_path: str = "models/dqn_gomoku", train_mode: bool = False):
+        self.model_path = model_path
+        self.model: Optional[DQN] = None
+        self.load_model()
+        
+        if self.model is None and not train_mode:
+            print(f"[DQN] No model at {self.model_path}")
 
-    def get_state_key(self, board: Board) -> str:
-        """棋盘转为字符串状态"""
-        return board.to_string()
+    def load_model(self):
+        if os.path.exists(self.model_path + ".zip"):
+            try:
+                self.model = DQN.load(self.model_path)
+                print(f"[DQN] Loaded {self.model_path}")
+            except Exception as e:
+                print(f"[DQN] Load failed: {e}")
 
-    def get_qa_key(self, state: str, action: Tuple[int, int]) -> str:
-        """状态-动作Key"""
-        return f"{state}|{action[0]},{action[1]}"
+    def train(self, total_timesteps: int = 100000, opponent_ai=None):
+        env = GomokuEnv(opponent_ai=opponent_ai)
+        
+        self.model = DQN(
+            policy="MlpPolicy",
+            env=env,
+            learning_rate=0.0001,
+            buffer_size=100000,
+            learning_starts=1000,
+            batch_size=32,
+            gamma=0.99,
+            exploration_fraction=0.1,
+            exploration_initial_eps=1.0,
+            exploration_final_eps=0.05,
+            verbose=1
+        )
+        
+        os.makedirs(os.path.dirname(self.model_path) or ".", exist_ok=True)
+        callback = CheckpointCallback(
+            save_freq=10000,
+            save_path="models/checkpoints/",
+            name_prefix="dqn_gomoku"
+        )
+        
+        self.model.learn(total_timesteps=total_timesteps, callback=callback, log_interval=100)
+        self.model.save(self.model_path)
 
-    def get_q(self, state: str, action: Tuple[int, int]) -> float:
-        """获取Q值，不存在返回0.0"""
-        return self.q_table.get(self.get_qa_key(state, action), 0.0)
+    def get_move(self, board: Board, player: int) -> Tuple[int, int]:
+        if self.model is None:
+            from backend.algorithms.classic_ai import random_move
+            return random_move(board)
 
-    def set_q(self, state: str, action: Tuple[int, int], value: float):
-        """设置Q值"""
-        self.q_table[self.get_qa_key(state, action)] = value
+        obs = np.array(board.board, dtype=np.float32)
+        action, _ = self.model.predict(obs, deterministic=True)
+        
+        x, y = divmod(int(action), 15)
+        
+        if not board.is_valid_move(x, y):
+            from backend.algorithms.classic_ai import random_move
+            return random_move(board)
+            
+        return (x, y)
 
-    def get_move(self, board: Board, player: int, training: bool = False) -> Tuple[int, int]:
-        """
-        选择动作，training=True时使用Epsilon-Greedy进行探索
-        """
-        moves = get_neighbor_moves(board)
-        if not moves:
-            return (7, 7)
+    def evaluate_board(self, board: Board, player: int) -> float:
+        if self.model is None:
+            return 50.0
 
-        state = self.get_state_key(board)
-
-        # Epsilon-Greedy策略
-        if training and random.random() < self.epsilon:
-            action = random.choice(moves)
-        else:
-            random.shuffle(moves)
-            best_move = moves[0]
-            max_q = -float('inf')
-
-            for move in moves:
-                q = self.get_q(state, move)
-                if q > max_q:
-                    max_q = q
-                    best_move = move
-            action = best_move
-
-        if training:
-            self.last_state = state
-            self.last_action = action
-
-        return action
-
-    def learn(self, current_board: Board, reward: float):
-        """
-        根据当前局面和奖励更新上一步的Q值
-        Q(s,a) <- Q(s,a) + alpha * (reward + gamma * max(Q(s',a')) - Q(s,a))
-        """
-        if self.last_state is None or self.last_action is None:
-            return
-
-        current_state = self.get_state_key(current_board)
-
-        moves = get_neighbor_moves(current_board)
-        max_next_q = 0.0
-        if moves:
-            max_next_q = max([self.get_q(current_state, m) for m in moves])
-
-        old_q = self.get_q(self.last_state, self.last_action)
-        new_q = old_q + self.alpha * (reward + self.gamma * max_next_q - old_q)
-        self.set_q(self.last_state, self.last_action, new_q)
-
-    def save_model(self, filename="q_model.pkl"):
-        """保存Q表"""
-        try:
-            with open(filename, 'wb') as f:
-                pickle.dump(self.q_table, f)
-            print(f"Model saved to {filename}, Size: {len(self.q_table)} entries")
-        except Exception as e:
-            print(f"Error saving model: {e}")
-
-    def load_model(self, filename="q_model.pkl"):
-        """加载Q表"""
-        try:
-            with open(filename, 'rb') as f:
-                self.q_table = pickle.load(f)
-            print(f"Model loaded from {filename}, Size: {len(self.q_table)} entries")
-        except FileNotFoundError:
-            print("Model file not found, starting with empty Q-table.")
-        except Exception as e:
-            print(f"Error loading model: {e}")
+        obs = np.array(board.board, dtype=np.float32)
+        import torch
+        with torch.no_grad():
+            obs_tensor = self.model.policy.obs_to_tensor(obs)
+            q_values = self.model.q_net(obs_tensor)
+            max_q = torch.max(q_values).item()
+            
+        score = 50 + (max_q / 2.0)
+        return max(0.0, min(100.0, score))

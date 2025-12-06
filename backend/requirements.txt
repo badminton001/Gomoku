@@ -1,6 +1,0 @@
-fastapi==0.104.0
-uvicorn==0.24.0
-matplotlib
-pandas
-requests==2.31.0
-monte-carlo-tree-search

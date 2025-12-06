@@ -1,8 +1,33 @@
+global:
+  default_board_size: 15
+  random_seed: 42
+
 algorithms:
+  classic:
+    enabled: true
+    max_depth: 2
+    neighbor_distance: 2
+
   mcts:
     name: "Monte Carlo Tree Search"
     enabled: true
-    time_limit: 2000          # 毫秒
+    time_limit: 2000
     iteration_limit: 1000
     exploration_weight: 1.414
     neighbor_distance: 2
+
+  qlearning:
+    name: "Q-Learning (DQN)"
+    enabled: true
+
+    models:
+      8x8: "models/dqn_gomoku_8x8"
+      15x15: "models/dqn_gomoku_15x15_pro"
+
+    training:
+      learning_rate: 0.0001
+      gamma: 0.995
+      buffer_size: 200000
+      batch_size: 512
+      exploration_fraction: 0.2
+      exploration_final_eps: 0.05
