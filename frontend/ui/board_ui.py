@@ -114,16 +114,27 @@ class BoardUI(tk.Frame):
 
         if move:
             x, y = move
+
+            # --- 核心修复：在落子前，先记录当前是谁 (AI 的身份) ---
+            ai_player_code = self.engine.current_player
+            # ------------------------------------------------
+
             # 2. Engine execute move
             success = self.engine.make_move(x, y)
+
             if success:
                 # 3. Draw piece
-                # Note: The engine has already switched players, so we draw the color of the "last player"
-                last_player = 3 - self.engine.current_player
-                color = "black" if last_player == 1 else "white"
+                # 直接用刚才记录的身份来决定颜色，不再依赖引擎是否切换了回合
+                color = "black" if ai_player_code == 1 else "white"
                 self.draw_piece(x, y, color)
 
-                self.check_game_over()
+                # 4. Check game over
+                # (这里加入 self.update() 是为了防止弹窗太快遮住棋子，建议加上)
+                if self.engine.game_over:
+                    self.update()  # 强制刷新界面显示
+                    self.check_game_over()
+                else:
+                    self.check_game_over()
 
     def on_click(self, event):
         """Player click event"""
