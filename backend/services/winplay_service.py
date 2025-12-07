@@ -1,0 +1,288 @@
+"""自对弈引擎核心模块
+
+负责6个AI算法的自动对战、结果收集和性能指标追踪
+"""
+import numpy as np
+import time
+from typing import List, Dict, Tuple, Optional
+from dataclasses import dataclass, asdict
+import json
+from datetime import datetime
+from pathlib import Path
+
+from backend.models.board import Board
+
+
+@dataclass
+class GameResult:
+    """单局游戏结果"""
+    player1: str          # 先手算法名
+    player2: str          # 后手算法名  
+    winner: str           # 胜者 ('player1', 'player2', 'draw')
+    total_moves: int      # 总步数
+    player1_avg_time: float  # 先手平均每步耗时
+    player2_avg_time: float  # 后手平均每步耗时
+    player1_times: List[float]  # 先手每步耗时列表
+    player2_times: List[float]  # 后手每步耗时列表
+    move_history: List[Tuple[int, int]]  # 着法历史
+    timestamp: str        # 时间戳
+    
+    def to_dict(self) -> Dict:
+        """转换为字典（用于JSON序列化）"""
+        return {
+            'player1': self.player1,
+            'player2': self.player2,
+            'winner': self.winner,
+            'total_moves': self.total_moves,
+            'player1_avg_time': self.player1_avg_time,
+            'player2_avg_time': self.player2_avg_time,
+            'timestamp': self.timestamp
+        }
+
+
+class SelfPlayEngine:
+    """自对弈引擎
+    
+    支持多个AI算法的循环赛评估，收集性能指标
+    """
+    
+    def __init__(self, board_size: int = 15, use_wandb: bool = False):
+        """初始化自对弈引擎
+        
+        Args:
+            board_size: 棋盘大小
+            use_wandb: 是否使用Wandb进行实验追踪
+        """
+        self.board_size = board_size
+        self.use_wandb = use_wandb
+        self.ai_algorithms = {}
+        
+        # Wandb初始化（可选）
+        if use_wandb:
+            try:
+                import wandb
+                wandb.init(
+                    project="gomoku-self-play",
+                    config={
+                        "board_size": board_size,
+                        "evaluation_type": "round_robin"
+                    }
+                )
+                print("✓ Wandb initialized")
+            except ImportError:
+                print("⚠ Wandb not available, skipping experiment tracking")
+                self.use_wandb = False
+    
+    def register_ai(self, name: str, ai_instance):
+        """注册AI算法
+        
+        Args:
+            name: 算法名称
+            ai_instance: AI实例，需要有get_move(board, player)方法
+        """
+        self.ai_algorithms[name] = ai_instance
+        print(f"✓ Registered AI: {name}")
+    
+    def play_single_match(self, ai1_name: str, ai2_name: str, verbose: bool = False) -> GameResult:
+        """单场对战
+        
+        Args:
+            ai1_name: 先手AI名称
+            ai2_name: 后手AI名称
+            verbose: 是否打印详细信息
+            
+        Returns:
+            GameResult对象
+        """
+        board = Board(self.board_size)
+        ai1 = self.ai_algorithms[ai1_name]
+        ai2 = self.ai_algorithms[ai2_name]
+        
+        move_history = []
+        player1_times = []
+        player2_times = []
+        
+        current_player = 1  # 1 = ai1 (黑), 2 = ai2 (白)
+        move_count = 0
+        max_moves = self.board_size * self.board_size
+        winner = 'draw'
+        
+        while move_count < max_moves:
+            # 选择当前AI
+            current_ai = ai1 if current_player == 1 else ai2
+            
+            # 计时下棋
+            start_time = time.time()
+            try:
+                move = current_ai.get_move(board, current_player)
+            except Exception as e:
+                if verbose:
+                    print(f"  ⚠ AI error: {e}")
+                winner = 'player2' if current_player == 1 else 'player1'
+                break
+                
+            elapsed = time.time() - start_time
+            
+            if move is None:  # 无合法走法
+                winner = 'draw'
+                break
+            
+            x, y = move
+            
+            # 验证走法合法性
+            if not board.is_valid_move(x, y):
+                if verbose:
+                    print(f"  ⚠ Invalid move: ({x}, {y})")
+                winner = 'player2' if current_player == 1 else 'player1'
+                break
+            
+            move_history.append((x, y))
+            
+            # 记录时间
+            if current_player == 1:
+                player1_times.append(elapsed)
+            else:
+                player2_times.append(elapsed)
+            
+            # 执行走法
+            board.place_stone(x, y, current_player)
+            
+            # 检查胜负
+            result = board.get_game_result()
+            if result == current_player:
+                winner = 'player1' if current_player == 1 else 'player2'
+                break
+            elif result == -1:  # 平局
+                winner = 'draw'
+                break
+            
+            # 切换玩家
+            current_player = 3 - current_player
+            move_count += 1
+        
+        # 计算平均时间
+        avg_time_p1 = np.mean(player1_times) if player1_times else 0.0
+        avg_time_p2 = np.mean(player2_times) if player2_times else 0.0
+        
+        return GameResult(
+            player1=ai1_name,
+            player2=ai2_name,
+            winner=winner,
+            total_moves=len(move_history),
+            player1_avg_time=avg_time_p1,
+            player2_avg_time=avg_time_p2,
+            player1_times=player1_times,
+            player2_times=player2_times,
+            move_history=move_history,
+            timestamp=datetime.now().isoformat()
+        )
+    
+    def run_round_robin(self, num_games_per_pair: int = 10, verbose: bool = True) -> List[GameResult]:
+        """循环赛：每对AI互相对战多次
+        
+        Args:
+            num_games_per_pair: 每对AI对战的场数
+            verbose: 是否打印进度信息
+            
+        Returns:
+            所有对局结果列表
+        """
+        ai_names = sorted(list(self.ai_algorithms.keys()))
+        all_results = []
+        
+        total_matches = len(ai_names) * (len(ai_names) - 1) * num_games_per_pair
+        completed = 0
+        
+        if verbose:
+            print(f"\n🎮 Starting Round Robin Tournament")
+            print(f"   Algorithms: {len(ai_names)}")
+            print(f"   Total matches: {total_matches}\n")
+        
+        for i, ai1_name in enumerate(ai_names):
+            for j, ai2_name in enumerate(ai_names):
+                if i == j:
+                    continue  # 不自己和自己对战
+                
+                if verbose:
+                    print(f"⚔️  {ai1_name} vs {ai2_name}")
+                
+                for game_num in range(num_games_per_pair):
+                    result = self.play_single_match(ai1_name, ai2_name, verbose=False)
+                    all_results.append(result)
+                    completed += 1
+                    
+                    # Wandb日志
+                    if self.use_wandb:
+                        try:
+                            import wandb
+                            wandb.log({
+                                f"{ai1_name}_vs_{ai2_name}/win": 1 if result.winner == 'player1' else 0,
+                                f"{ai1_name}_vs_{ai2_name}/moves": result.total_moves,
+                                f"{ai1_name}_vs_{ai2_name}/avg_time": (result.player1_avg_time + result.player2_avg_time) / 2,
+                                "completed_games": completed
+                            })
+                        except:
+                            pass
+                    
+                    if verbose:
+                        print(f"   Game {game_num+1}/{num_games_per_pair}: "
+                              f"Winner={result.winner}, Moves={result.total_moves}, "
+                              f"Time={result.player1_avg_time:.3f}s/{result.player2_avg_time:.3f}s")
+                
+                if verbose:
+                    print(f"   Progress: {completed}/{total_matches} ({100*completed/total_matches:.1f}%)\n")
+        
+        if verbose:
+            print(f"✅ Tournament completed! Total games: {len(all_results)}")
+        
+        return all_results
+    
+    def save_results(self, results: List[GameResult], output_dir: str = './data/results/self_play'):
+        """保存结果
+        
+        Args:
+            results: 对局结果列表
+            output_dir: 输出目录
+            
+        Returns:
+            (详细结果路径, 汇总CSV路径)
+        """
+        import os
+        import pandas as pd
+        
+        os.makedirs(f"{output_dir}/matches", exist_ok=True)
+        os.makedirs(f"{output_dir}/aggregated", exist_ok=True)
+        
+        # 保存每局详细结果（JSON）
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        detailed_path = f"{output_dir}/matches/results_{timestamp}.json"
+        
+        with open(detailed_path, 'w', encoding='utf-8') as f:
+            json.dump([r.to_dict() for r in results], f, indent=2, ensure_ascii=False)
+        
+        print(f"✓ Saved detailed results to {detailed_path}")
+        
+        # 保存汇总CSV
+        df = pd.DataFrame([r.to_dict() for r in results])
+        csv_path = f"{output_dir}/aggregated/results_{timestamp}.csv"
+        df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+        
+        print(f"✓ Saved aggregated results to {csv_path}")
+        
+        # 打印基础统计
+        print(f"\n📊 Quick Statistics:")
+        print(f"   Total games: {len(results)}")
+        print(f"   Average moves per game: {df['total_moves'].mean():.1f}")
+        print(f"   Average time per move: {(df['player1_avg_time'] + df['player2_avg_time']).mean() / 2:.3f}s")
+        
+        return detailed_path, csv_path
+    
+    def cleanup(self):
+        """清理资源"""
+        if self.use_wandb:
+            try:
+                import wandb
+                wandb.finish()
+                print("✓ Wandb session finished")
+            except:
+                pass
