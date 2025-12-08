@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 # ==========================================
-# 1. 初始化 & 日志配置
+# 1. Initialize & Cap of logs
 # ==========================================
 logging.basicConfig(
     level=logging.INFO,
@@ -20,10 +20,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("backend")
 
-app = FastAPI(title="Gomoku-AI (Person G)") # 注意这里的标题变了
+app = FastAPI(title="Gomoku-AI (HeptagonPan)") 
 
 # ==========================================
-# 2. 定义数据模型
+# 2. def data type
 # ==========================================
 class BoardState(BaseModel):
     board: List[List[int]]       
@@ -37,7 +37,7 @@ class MoveResponse(BaseModel):
     debug_info: str
 
 # ==========================================
-# 3. API 接口实现
+# 3. API's acheivement
 # ==========================================
 @app.get("/")
 def root():
@@ -61,7 +61,7 @@ def predict_move(state: BoardState):
     logger.info(f"Received move request. Algo: {state.algorithm}")
     
     try:
-        # 模拟 AI 思考
+        # Imitate the thinking process of AI
         time.sleep(0.5)
         best_x, best_y = 7, 7
         
