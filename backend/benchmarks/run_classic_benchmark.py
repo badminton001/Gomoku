@@ -85,6 +85,7 @@ def run_benchmark() -> List[Dict]:
         depth=cfg["alpha_beta"]["depth"],
         distance=cfg["alpha_beta"]["distance"],
         candidate_limit=cfg["alpha_beta"]["candidate_limit"],
+        use_eval_cache=cfg["alpha_beta"].get("use_eval_cache", True),
     )
 
     random_wrapper = type("RandomWrap", (), {"get_move": lambda self, b, p: random_move(b)})()
