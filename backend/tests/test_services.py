@@ -46,15 +46,15 @@ class TestPersonBServices(unittest.TestCase):
 
     def tearDown(self):
         """
-        测试后的清理工作：自动删除生成的临时文件
+        测试后的清理工作：自动删除生成的临时文件（此处已被注释，可以保存结果）
         """
-        if os.path.exists(self.test_base_dir):
-            try:
-                shutil.rmtree(self.test_base_dir)
-                print(f"\n🧹 已清理临时测试文件: {self.test_base_dir}")
-            except Exception as e:
-                print(f"清理失败: {e}")
-
+        #if os.path.exists(self.test_base_dir):
+         #   try:
+          #      shutil.rmtree(self.test_base_dir)
+          #      print(f"\n🧹 已清理临时测试文件: {self.test_base_dir}")
+           # except Exception as e:
+           #     print(f"清理失败: {e}")
+        pass
     def test_full_workflow_pandas_and_matplotlib(self):
         """
         🔥 核心测试: 验证 Pandas 数据组织 + Matplotlib 画图功能
