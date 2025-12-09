@@ -9,7 +9,6 @@ from backend.models.board import Board
 
 
 def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
-    """获取棋子周围的合法空位"""
     if board.move_count == 0:
         return [(board.size // 2, board.size // 2)]
 
@@ -27,16 +26,13 @@ def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]
 
                 for nx in range(x_min, x_max):
                     for ny in range(y_min, y_max):
-                        if board_map[nx][ny] == 0:
-                            if board.is_valid_move(nx, ny):
-                                moves.add((nx, ny))
+                        if board_map[nx][ny] == 0 and board.is_valid_move(nx, ny):
+                            moves.add((nx, ny))
 
     return list(moves)
 
 
 class GomokuState(BaseState):
-    """MCTS State 适配"""
-
     def __init__(self, board: Board, current_player: int, last_move: Tuple[int, int] = None):
         self.board = board
         self.current_player = current_player
@@ -51,7 +47,7 @@ class GomokuState(BaseState):
 
     def take_action(self, action: Tuple[int, int]) -> "GomokuState":
         new_board = copy.deepcopy(self.board)
-        new_board.place_stone(action[0], action[1], self.current_player)
+        new_board.place_stone(action, action, self.current_player)
         next_player = 3 - self.current_player
         return GomokuState(new_board, next_player, last_move=action)
 
@@ -65,14 +61,11 @@ class GomokuState(BaseState):
 
 
 class MCTSAgent:
-    """蒙特卡洛树搜索"""
-
     def __init__(self, time_limit: int = 2000, iteration_limit: int = 1000, **kwargs):
         self.time_limit = time_limit
         self.iteration_limit = iteration_limit
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
-        """获取最优着法"""
         if board.move_count == 0:
             return (board.size // 2, board.size // 2)
 
@@ -102,5 +95,38 @@ class MCTSAgent:
         return best_action
 
     def evaluate_board(self, board: Board, player: int) -> float:
-        """评估棋盘状态"""
-        return 0.5
+        current_result = board.get_game_result()
+        if current_result != 0:
+            if current_result == 3:
+                return 0.5
+            return 1.0 if current_result == player else 0.0
+
+        n_simulations = 30
+        wins = 0
+
+        for _ in range(n_simulations):
+            sim_board = copy.deepcopy(board)
+            current_turn_player = 1 if sim_board.move_count % 2 == 0 else 2
+            sim_turn = current_turn_player
+
+            while True:
+                res = sim_board.get_game_result()
+                if res != 0:
+                    if res == player:
+                        wins += 1
+                    elif res == 3:
+                        wins += 0.5
+                    break
+
+                moves = get_neighbor_moves(sim_board, distance=1)
+                if not moves:
+                    moves = get_neighbor_moves(sim_board, distance=2)
+
+                if not moves:
+                    break
+
+                action = random.choice(moves)
+                sim_board.place_stone(action, action, sim_turn)
+                sim_turn = 3 - sim_turn
+
+        return wins / n_simulations
