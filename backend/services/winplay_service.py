@@ -56,6 +56,7 @@ class SelfPlayEngine:
         self.board_size = board_size
         self.use_wandb = use_wandb
         self.ai_algorithms = {}
+        self.checkpoint_path = "./data/results/self_play/checkpoint.json"
         
         # Wandb初始化（可选）
         if use_wandb:
@@ -177,12 +178,13 @@ class SelfPlayEngine:
             timestamp=datetime.now().isoformat()
         )
     
-    def run_round_robin(self, num_games_per_pair: int = 10, verbose: bool = True) -> List[GameResult]:
+    def run_round_robin(self, num_games_per_pair: int = 10, verbose: bool = True, resume: bool = False) -> List[GameResult]:
         """循环赛：每对AI互相对战多次
         
         Args:
             num_games_per_pair: 每对AI对战的场数
             verbose: 是否打印进度信息
+            resume: 是否从断点继续
             
         Returns:
             所有对局结果列表
@@ -192,24 +194,47 @@ class SelfPlayEngine:
         
         total_matches = len(ai_names) * (len(ai_names) - 1) * num_games_per_pair
         completed = 0
+        start_i, start_j, start_game = 0, 0, 0
         
-        if verbose:
+        # 断点续传
+        if resume:
+            checkpoint = self.load_checkpoint()
+            if checkpoint:
+                all_results = checkpoint['results']
+                start_i = checkpoint['current_i']
+                start_j = checkpoint['current_j']
+                start_game = checkpoint['current_game']
+                completed = len(all_results)
+                if verbose:
+                    print(f"\n🔄 Resuming from checkpoint...")
+                    print(f"   Already completed: {completed}/{total_matches} games")
+        
+        if verbose and not resume:
             print(f"\n🎮 Starting Round Robin Tournament")
             print(f"   Algorithms: {len(ai_names)}")
             print(f"   Total matches: {total_matches}\n")
         
         for i, ai1_name in enumerate(ai_names):
+            if i < start_i:
+                continue
             for j, ai2_name in enumerate(ai_names):
                 if i == j:
                     continue  # 不自己和自己对战
+                if i == start_i and j < start_j:
+                    continue
                 
                 if verbose:
                     print(f"⚔️  {ai1_name} vs {ai2_name}")
                 
-                for game_num in range(num_games_per_pair):
+                game_start = start_game if (i == start_i and j == start_j) else 0
+                for game_num in range(game_start, num_games_per_pair):
                     result = self.play_single_match(ai1_name, ai2_name, verbose=False)
                     all_results.append(result)
                     completed += 1
+                    
+                    # 每10场保存一次checkpoint
+                    if completed % 10 == 0:
+                        self.save_checkpoint(all_results, i, j, game_num + 1)
                     
                     # Wandb日志
                     if self.use_wandb:
@@ -234,6 +259,9 @@ class SelfPlayEngine:
         
         if verbose:
             print(f"✅ Tournament completed! Total games: {len(all_results)}")
+        
+        # 清除checkpoint
+        self.clear_checkpoint()
         
         return all_results
     
@@ -276,6 +304,72 @@ class SelfPlayEngine:
         print(f"   Average time per move: {(df['player1_avg_time'] + df['player2_avg_time']).mean() / 2:.3f}s")
         
         return detailed_path, csv_path
+    
+    def save_checkpoint(self, results: List[GameResult], current_i: int, current_j: int, current_game: int):
+        """保存断点
+        
+        Args:
+            results: 当前所有结果
+            current_i: 当前外层循环索引
+            current_j: 当前内层循环索引
+            current_game: 当前游戏编号
+        """
+        import os
+        checkpoint = {
+            'results': [r.to_dict() for r in results],
+            'current_i': current_i,
+            'current_j': current_j,
+            'current_game': current_game,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        os.makedirs(os.path.dirname(self.checkpoint_path), exist_ok=True)
+        with open(self.checkpoint_path, 'w', encoding='utf-8') as f:
+            json.dump(checkpoint, f, indent=2)
+    
+    def load_checkpoint(self) -> Optional[Dict]:
+        """加载断点
+        
+        Returns:
+            断点数据或None
+        """
+        if not Path(self.checkpoint_path).exists():
+            return None
+        
+        try:
+            with open(self.checkpoint_path, 'r', encoding='utf-8') as f:
+                checkpoint_data = json.load(f)
+            
+            # 重建GameResult对象
+            results = []
+            for r_dict in checkpoint_data['results']:
+                results.append(GameResult(
+                    player1=r_dict['player1'],
+                    player2=r_dict['player2'],
+                    winner=r_dict['winner'],
+                    total_moves=r_dict['total_moves'],
+                    player1_avg_time=r_dict['player1_avg_time'],
+                    player2_avg_time=r_dict['player2_avg_time'],
+                    player1_times=[],
+                    player2_times=[],
+                    move_history=[],
+                    timestamp=r_dict['timestamp']
+                ))
+            
+            return {
+                'results': results,
+                'current_i': checkpoint_data['current_i'],
+                'current_j': checkpoint_data['current_j'],
+                'current_game': checkpoint_data['current_game']
+            }
+        except Exception as e:
+            print(f"⚠ Failed to load checkpoint: {e}")
+            return None
+    
+    def clear_checkpoint(self):
+        """清除断点文件"""
+        if Path(self.checkpoint_path).exists():
+            Path(self.checkpoint_path).unlink()
     
     def cleanup(self):
         """清理资源"""

@@ -64,25 +64,41 @@ class GomokuState(BaseState):
 
 
 class MCTSAgent:
-    """蒙特卡洛树搜索"""
+    """Monte Carlo Tree Search AI"""
     
-    def __init__(self, time_limit: int = 2000, iteration_limit: int = 1000, **kwargs):
-        self.time_limit = time_limit
+    def __init__(self, iteration_limit: int = 1000, time_limit: int = None, **kwargs):
+        """Initialize MCTS agent
+        
+        Args:
+            iteration_limit: Number of MCTS iterations (recommended: 500-2000)
+            time_limit: Time limit in ms (not used with iteration_limit)
+        
+        Note: MCTS library doesn't support both limits simultaneously.
+              We prioritize iteration_limit for consistent behavior.
+        """
         self.iteration_limit = iteration_limit
+        self.time_limit = time_limit if iteration_limit is None else None
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
-        """获取最优着法"""
+        """Get best move using MCTS"""
+        # First move: return center
         if board.move_count == 0:
             return (board.size // 2, board.size // 2)
 
         search_board = copy.deepcopy(board)
         initial_state = GomokuState(search_board, player)
         
-        searcher = MCTS(
-            time_limit=self.time_limit, 
-            iteration_limit=self.iteration_limit,
-            exploration_constant=1.414
-        )
+        # Create MCTS searcher with only one limit type
+        if self.iteration_limit is not None:
+            searcher = MCTS(
+                iteration_limit=self.iteration_limit,
+                exploration_constant=1.414
+            )
+        else:
+            searcher = MCTS(
+                time_limit=self.time_limit,
+                exploration_constant=1.414
+            )
 
         try:
             best_action = searcher.search(initial_state=initial_state)
@@ -90,6 +106,7 @@ class MCTSAgent:
             print(f"[MCTS] Search error: {e}")
             best_action = None
 
+        # Fallback to random valid move if search failed
         if best_action is None:
             candidates = get_neighbor_moves(board)
             if candidates:
@@ -99,5 +116,5 @@ class MCTSAgent:
         return best_action
 
     def evaluate_board(self, board: Board, player: int) -> float:
-        """使用MCTS快速模拟评估局势"""
+        """Quick board evaluation (not used in MCTS search)"""
         return 50.0
