@@ -1,5 +1,5 @@
 import os
-import matplotlib.pyplot as plt  # <--- 1. 新增：引入画图库
+import matplotlib.pyplot as plt  # 引入画图库
 from typing import List, Dict, Any
 from backend.models.board import Board
 from backend.models.replay import Move
@@ -20,7 +20,7 @@ class MoveScorer:
         critical_moments = []
         scores = []
 
-        # 模拟评分逻辑 (后续对接 Person C)
+        # 模拟评分逻辑 (对接 Person C)
         import random
         for move in moves:
             # score = ai_model.evaluate(board, move)
@@ -42,7 +42,7 @@ class MoveScorer:
             "chart_path": chart_path  # <--- 返回图片的路径给前端
         }
 
-    # <--- 3. 新增：这是刚才那个画图的函数，加在类定义的最后面 --->
+   #画图函数
     def generate_analysis_chart(self, scores: List[float], game_id: str) -> str:
         """
         生成胜率波动图，并保存为图片文件
