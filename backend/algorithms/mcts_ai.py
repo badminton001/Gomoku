@@ -64,6 +64,7 @@ class MCTSAgent:
     def __init__(self, time_limit: int = 2000, iteration_limit: int = 1000, **kwargs):
         self.time_limit = time_limit
         self.iteration_limit = iteration_limit
+        self.time_limit = time_limit if iteration_limit is None else None
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
         if board.move_count == 0:
@@ -85,6 +86,7 @@ class MCTSAgent:
             print(f"[MCTS] Search error: {e}")
             best_action = None
 
+        # Fallback to random valid move if search failed
         if best_action is None:
             candidates = get_neighbor_moves(board)
             if candidates:
