@@ -235,16 +235,32 @@ class MinimaxAgent:
 
 
 class AlphaBetaAgent:
-    """Minimax with alpha-beta pruning."""
+    """Minimax with alpha-beta pruning and lightweight caching."""
 
-    def __init__(self, depth: int = 3, distance: int = 2, candidate_limit: Optional[int] = 12):
+    def __init__(
+        self,
+        depth: int = 3,
+        distance: int = 2,
+        candidate_limit: Optional[int] = 12,
+        use_eval_cache: bool = True,
+    ):
         self.depth = depth
         self.distance = distance
         self.candidate_limit = candidate_limit
+        self.use_eval_cache = use_eval_cache
         self.last_metrics: Optional[SearchMetrics] = None
         self._nodes = 0
+        self._eval_cache: Dict[Tuple[str, int], float] = {}
 
-    def _ordered_candidates(self, board: Board, player: int) -> List[Tuple[int, int]]:
+    def _cached_eval(self, board: Board, player: int) -> float:
+        if not self.use_eval_cache:
+            return evaluate_board(board, player)
+        key = (board.to_string(), player)
+        if key not in self._eval_cache:
+            self._eval_cache[key] = evaluate_board(board, player)
+        return self._eval_cache[key]
+
+    def _ordered_candidates(self, board: Board, player: int, depth: int) -> List[Tuple[int, int]]:
         moves = get_neighbor_moves(board, distance=self.distance)
         scored = []
         opponent = 3 - player
@@ -260,17 +276,32 @@ class AlphaBetaAgent:
                 board.move_count -= 1
 
             board.place_stone(mv[0], mv[1], player)
-            score = evaluate_board(board, player) + block_bonus
+            score = self._cached_eval(board, player) + block_bonus
             board.board[mv[0]][mv[1]] = 0
             board.move_count -= 1
             scored.append((score, mv))
         scored.sort(key=lambda x: x[0], reverse=True)
+
         ordered = [mv for _, mv in scored]
-        if self.candidate_limit is not None:
-            ordered = ordered[: self.candidate_limit]
+        limit = self.candidate_limit
+        if limit is not None and depth > 1:
+            # Slightly tighten the branching factor below root for speed.
+            limit = max(6, int(limit * 0.8))
+        if limit is not None:
+            ordered = ordered[:limit]
         if not ordered:
             ordered.append((board.size // 2, board.size // 2))
         return ordered
+
+    def _evaluate_terminal(self, board: Board, max_player: int) -> float:
+        result = board.get_game_result()
+        if result == max_player:
+            return 1_000_000.0
+        if result == 3 - max_player:
+            return -1_000_000.0
+        if result == 3:
+            return 0.0
+        return None  # type: ignore[return-value]
 
     def _alphabeta(
         self,
@@ -282,17 +313,13 @@ class AlphaBetaAgent:
         max_player: int,
     ) -> Tuple[float, Optional[Tuple[int, int]]]:
         self._nodes += 1
-        result = board.get_game_result()
-        if result == max_player:
-            return 1_000_000.0, None
-        if result == 3 - max_player:
-            return -1_000_000.0, None
-        if result == 3:
-            return 0.0, None
+        terminal_value = self._evaluate_terminal(board, max_player)
+        if terminal_value is not None:
+            return terminal_value, None
         if depth == 0:
-            return evaluate_board(board, max_player), None
+            return self._cached_eval(board, max_player), None
 
-        candidates = self._ordered_candidates(board, current_player)
+        candidates = self._ordered_candidates(board, current_player, depth)
         best_move: Optional[Tuple[int, int]] = None
 
         if current_player == max_player:
@@ -300,7 +327,11 @@ class AlphaBetaAgent:
             for move in candidates:
                 if not board.place_stone(move[0], move[1], current_player):
                     continue
-                child_value, _ = self._alphabeta(board, depth - 1, alpha, beta, 3 - current_player, max_player)
+                result = self._evaluate_terminal(board, max_player)
+                if result is None:
+                    child_value, _ = self._alphabeta(board, depth - 1, alpha, beta, 3 - current_player, max_player)
+                else:
+                    child_value = result
                 board.board[move[0]][move[1]] = 0
                 board.move_count -= 1
                 if child_value > value:
@@ -315,7 +346,11 @@ class AlphaBetaAgent:
         for move in candidates:
             if not board.place_stone(move[0], move[1], current_player):
                 continue
-            child_value, _ = self._alphabeta(board, depth - 1, alpha, beta, 3 - current_player, max_player)
+            result = self._evaluate_terminal(board, max_player)
+            if result is None:
+                child_value, _ = self._alphabeta(board, depth - 1, alpha, beta, 3 - current_player, max_player)
+            else:
+                child_value = result
             board.board[move[0]][move[1]] = 0
             board.move_count -= 1
             if child_value < value:
@@ -328,6 +363,7 @@ class AlphaBetaAgent:
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
         self._nodes = 0
+        self._eval_cache = {}
         start = time.perf_counter()
         _, move = self._alphabeta(board, self.depth, -math.inf, math.inf, player, player)
         elapsed_ms = (time.perf_counter() - start) * 1000
