@@ -9,14 +9,14 @@ from backend.models.board import Board
 
 
 def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
-    """获取棋子周围distance范围内的空位"""
+    """获取棋子周围的合法空位"""
     if board.move_count == 0:
         return [(board.size // 2, board.size // 2)]
-    
+
     moves = set()
     size = board.size
     board_map = board.board
-    
+
     for x in range(size):
         for y in range(size):
             if board_map[x][y] != 0:
@@ -24,18 +24,19 @@ def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]
                 x_max = min(size, x + distance + 1)
                 y_min = max(0, y - distance)
                 y_max = min(size, y + distance + 1)
-                
+
                 for nx in range(x_min, x_max):
                     for ny in range(y_min, y_max):
                         if board_map[nx][ny] == 0:
-                            moves.add((nx, ny))
-    
+                            if board.is_valid_move(nx, ny):
+                                moves.add((nx, ny))
+
     return list(moves)
 
 
 class GomokuState(BaseState):
-    """MCTS库的State接口适配"""
-    
+    """MCTS State 适配"""
+
     def __init__(self, board: Board, current_player: int, last_move: Tuple[int, int] = None):
         self.board = board
         self.current_player = current_player
@@ -65,7 +66,7 @@ class GomokuState(BaseState):
 
 class MCTSAgent:
     """蒙特卡洛树搜索"""
-    
+
     def __init__(self, time_limit: int = 2000, iteration_limit: int = 1000, **kwargs):
         self.time_limit = time_limit
         self.iteration_limit = iteration_limit
@@ -77,13 +78,14 @@ class MCTSAgent:
 
         search_board = copy.deepcopy(board)
         initial_state = GomokuState(search_board, player)
-        
+
         searcher = MCTS(
-            time_limit=self.time_limit, 
+            time_limit=self.time_limit,
             iteration_limit=self.iteration_limit,
             exploration_constant=1.414
         )
 
+        best_action = None
         try:
             best_action = searcher.search(initial_state=initial_state)
         except Exception as e:
@@ -94,10 +96,11 @@ class MCTSAgent:
             candidates = get_neighbor_moves(board)
             if candidates:
                 return random.choice(candidates)
-            return (board.size // 2, board.size // 2)
-            
+            else:
+                return (-1, -1)
+
         return best_action
 
     def evaluate_board(self, board: Board, player: int) -> float:
-        """使用MCTS快速模拟评估局势"""
-        return 50.0
+        """评估棋盘状态"""
+        return 0.5
