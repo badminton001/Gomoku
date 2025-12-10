@@ -8,6 +8,8 @@ from backend.models.game_engine import GameEngine
 # Import Algorithms (Using AlphaBeta as default AI)
 from backend.algorithms.classic_ai import AlphaBetaAgent
 
+from backend.algorithms.qlearning_ai import QLearningAgent
+
 # --- Import UI Components (Relative imports) ---
 from .difficulty_control import DifficultyControlUI
 from .ai_recommender import AiRecommender
@@ -100,7 +102,8 @@ class BoardUI(tk.Frame):
         elif diff == 'medium':
             self.ai_agent = AlphaBetaAgent(depth=2)
         elif diff == 'hard':
-            self.ai_agent = AlphaBetaAgent(depth=3)
+            print("UI: Loading DQN Agent...")
+            self.ai_agent = QLearningAgent(model_path="models/dqn_15x15_final")
 
         self.reset_game()
 
