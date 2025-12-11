@@ -122,30 +122,62 @@ class SelfPlayEngine:
             if verbose:
                 print(f"\n   Move {move_count + 1}: {current_name} {player_symbol} thinking...", end="", flush=True)
             
-            # 计时下棋
+            # 计时下棋 - 允许多次重试非法走法
+            max_retries = 3
+            move = None
+            retry_count = 0
+            
             start_time = time.time()
-            try:
-                move = current_ai.get_move(board, current_player)
-            except Exception as e:
-                if verbose:
-                    print(f" ERROR: {e}")
-                winner = 'player2' if current_player == 1 else 'player1'
-                break
+            for retry_count in range(max_retries):
+                try:
+                    move = current_ai.get_move(board, current_player)
+                except KeyboardInterrupt:
+                    if verbose:
+                        print(f"\n⚠️  Match interrupted by user (Ctrl+C)")
+                    raise  # Re-raise to stop the tournament
+                except Exception as e:
+                    if verbose:
+                        print(f" ERROR: {e}")
+                        import traceback
+                        print("\n❌ Exception traceback:")
+                        traceback.print_exc()
+                    winner = 'player2' if current_player == 1 else 'player1'
+                    break
                 
+                if move is None:  # 无合法走法
+                    continue
+                
+                x, y = move
+                
+                # 验证走法合法性
+                if board.is_valid_move(x, y):
+                    # 走法有效，跳出重试循环
+                    break
+                else:
+                    if verbose:
+                        print(f" INVALID: ({x}, {y}) - Retry {retry_count + 1}/{max_retries}", end="", flush=True)
+                    move = None
+            
             elapsed = time.time() - start_time
             
-            if move is None:  # 无合法走法
-                winner = 'draw'
-                break
-            
-            x, y = move
-            
-            # 验证走法合法性
-            if not board.is_valid_move(x, y):
-                if verbose:
-                    print(f" INVALID: ({x}, {y})")
-                winner = 'player2' if current_player == 1 else 'player1'
-                break
+            # 所有重试都失败，尝试随机选择一个合法走法
+            if move is None:
+                from backend.algorithms.mcts_ai import get_neighbor_moves
+                candidates = get_neighbor_moves(board, distance=2)
+                valid_candidates = [m for m in candidates if board.is_valid_move(m[0], m[1])]
+                
+                if valid_candidates:
+                    import random
+                    move = random.choice(valid_candidates)
+                    x, y = move
+                    if verbose:
+                        print(f" - Auto-selected valid move: ({x}, {y})")
+                else:
+                    # 完全没有合法走法，判负
+                    if verbose:
+                        print(f" - No valid moves available")
+                    winner = 'player2' if current_player == 1 else 'player1'
+                    break
             
             move_history.append((x, y))
             
