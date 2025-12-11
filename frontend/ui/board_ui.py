@@ -80,18 +80,49 @@ class BoardUI(tk.Frame):
         self.draw_grid()
 
     def handle_hint_request(self):
-        """Handle hint request"""
+        """Handle hint request (Updated for Top-5 with Read-Only Backend)"""
         if self.engine.game_over:
             return
 
-        print("UI: Thinking for hint...")
-        # Calculate best move using AI
+        print("UI: Thinking for Top-5 hints...")
         try:
+            # --- 核心修改开始 ---
+            # 既然后端 AlphaBetaAgent 要求传 depth，我们就传给它！
+            # depth 参数可以直接从 self.ai_agent.depth 获取
+
+            # 1. 检查是不是 AlphaBetaAgent，如果是，必须传 depth
+            if hasattr(self.ai_agent, '_ordered_candidates'):
+                # 获取参数数量，或者直接尝试传参
+                try:
+                    # 尝试带 depth 传参 (适配你刚才发的不可修改代码)
+                    candidates = self.ai_agent._ordered_candidates(
+                        self.engine.board,
+                        self.engine.current_player,
+                        self.ai_agent.depth
+                    )
+                except TypeError:
+                    # 万一以后换回不需要 depth 的算法 (比如 Minimax)，这里做个兼容
+                    candidates = self.ai_agent._ordered_candidates(
+                        self.engine.board,
+                        self.engine.current_player
+                    )
+            else:
+                raise AttributeError("Agent does not support ordered candidates")
+
+            # 取前 5 个
+            top_5_moves = candidates[:5]
+
+            if top_5_moves:
+                print(f"Top 5 moves found: {top_5_moves}")
+                self.recommender.show_top5(top_5_moves)
+            # --- 核心修改结束 ---
+
+        except Exception as e:
+            print(f"AI Error: {e}")
+            # 兜底策略：如果还是出错，就用最基础的 get_move 只显示一个
             move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
             if move:
                 self.recommender.show_hint(move[0], move[1])
-        except Exception as e:
-            print(f"AI Error: {e}")
 
     def handle_settings_change(self, mode, diff):
         """Handle settings change"""
