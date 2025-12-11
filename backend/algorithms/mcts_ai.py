@@ -47,7 +47,7 @@ class GomokuState(BaseState):
 
     def take_action(self, action: Tuple[int, int]) -> "GomokuState":
         new_board = copy.deepcopy(self.board)
-        new_board.place_stone(action, action, self.current_player)
+        new_board.place_stone(action[0], action[1], self.current_player)  # Fixed: unpack tuple correctly
         next_player = 3 - self.current_player
         return GomokuState(new_board, next_player, last_move=action)
 
