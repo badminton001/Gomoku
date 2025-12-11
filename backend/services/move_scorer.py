@@ -70,6 +70,7 @@ class MoveScorer:
     def _evaluate_position(self, board: Board, player: int) -> Dict[str, float]:
         """
         Evaluate a board position using all enabled AI algorithms.
+        Each algorithm uses its actual search method to provide independent evaluations.
         
         Args:
             board: Current board state
@@ -79,20 +80,49 @@ class MoveScorer:
             Dictionary with scores from each algorithm (normalized to 0-1 range)
         """
         scores = {}
-        
-        # Classic heuristic evaluation (fast)
-        # Returns raw score, need to normalize
-        classic_score = classic_evaluate_board(board, player)
-        # Normalize using sigmoid function to map to [0, 1]
         import math
-        scores['greedy'] = 1 / (1 + math.exp(-classic_score / 1000))
         
-        # Minimax and Alpha-Beta use same evaluation, but different search
-        # We'll use the heuristic value as their scores
-        scores['minimax'] = scores['greedy']  # Same heuristic
-        scores['alphabeta'] = scores['greedy']  # Same heuristic
+        # 1. GREEDY: Fast heuristic evaluation (no search)
+        greedy_score = classic_evaluate_board(board, player)
+        scores['greedy'] = 1 / (1 + math.exp(-greedy_score / 1000))
         
-        # MCTS evaluation (slow but accurate)
+        # 2. MINIMAX: Depth-2 search with minimax algorithm
+        # Create a temporary copy to run minimax search
+        search_board = copy.deepcopy(board)
+        try:
+            # Run minimax to get the best value from this position
+            minimax_value, _ = self.minimax_agent._minimax(
+                search_board, 
+                depth=2, 
+                current_player=player, 
+                max_player=player
+            )
+            # Normalize: minimax returns large values for wins, negative for losses
+            # Map to [0, 1] using sigmoid
+            scores['minimax'] = 1 / (1 + math.exp(-minimax_value / 10000))
+        except Exception as e:
+            print(f"Minimax evaluation error: {e}")
+            scores['minimax'] = scores['greedy']  # Fallback
+        
+        # 3. ALPHA-BETA: Depth-2-3 search with pruning
+        search_board = copy.deepcopy(board)
+        try:
+            # Run alpha-beta search to get position value
+            ab_value, _ = self.alphabeta_agent._alphabeta(
+                search_board,
+                depth=2,
+                alpha=-math.inf,
+                beta=math.inf,
+                current_player=player,
+                max_player=player
+            )
+            # Normalize using same sigmoid as minimax
+            scores['alphabeta'] = 1 / (1 + math.exp(-ab_value / 10000))
+        except Exception as e:
+            print(f"Alpha-Beta evaluation error: {e}")
+            scores['alphabeta'] = scores['greedy']  # Fallback
+        
+        # 4. MCTS: Simulation-based evaluation (if enabled)
         if self.enable_mcts and self.mcts_agent:
             try:
                 mcts_score = self.mcts_agent.evaluate_board(board, player)
@@ -227,30 +257,50 @@ class MoveScorer:
         df.to_csv(csv_path, index=False)
         print(f"   ✓ Saved detailed scores to {csv_path}")
         
-        # Generate visualization
-        chart_path = self.generate_analysis_chart(df, game_id)
-        print(f"   ✓ Generated chart: {chart_path}")
+        # Generate visualizations (multiple charts)
+        chart_paths = self.generate_visualizations(df, board, game_id)
+        print(f"   ✓ Generated {len(chart_paths)} visualization charts")
         
         return {
             "dataframe": df,
             "score_curve": df['avg_score'].tolist(),
             "critical_moments": critical_moments,
-            "chart_path": chart_path,
+            "chart_path": chart_paths.get('comparison', None),  # Main comparison chart
+            "chart_paths": chart_paths,  # All charts
             "stats_summary": stats_summary,
             "csv_path": csv_path
         }
 
-    def generate_analysis_chart(self, df: pd.DataFrame, game_id: str) -> str:
+    def generate_visualizations(self, df: pd.DataFrame, board: Board, game_id: str) -> Dict[str, str]:
         """
-        Generate multi-algorithm comparison chart.
+        Generate comprehensive visualizations including:
+        1. Multi-algorithm comparison chart
+        2. Move heatmap on board
+        3. Score distribution histogram
         
         Args:
-            df: DataFrame with all algorithm scores
+            df: DataFrame with all move data
+            board: Final board state
             game_id: Game identifier
             
         Returns:
-            Path to saved chart
+            Dictionary mapping visualization type to file path
         """
+        chart_paths = {}
+        
+        # 1. Multi-algorithm comparison chart (existing)
+        chart_paths['comparison'] = self._generate_comparison_chart(df, game_id)
+        
+        # 2. Move quality heatmap
+        chart_paths['heatmap'] = self._generate_move_heatmap(df, board, game_id)
+        
+        # 3. Score distribution histogram
+        chart_paths['distribution'] = self._generate_score_distribution(df, game_id)
+        
+        return chart_paths
+
+    def _generate_comparison_chart(self, df: pd.DataFrame, game_id: str) -> str:
+        """Generate multi-algorithm comparison line chart."""
         plt.figure(figsize=(14, 8))
         
         # Plot scores from all algorithms
@@ -286,7 +336,8 @@ class MoveScorer:
                            textcoords="offset points", xytext=(0, -15),
                            ha='center', color='red', fontweight='bold', fontsize=14)
         
-        plt.title(f'Multi-Algorithm Game Analysis: {game_id}', fontsize=16, fontweight='bold')
+        plt.title(f'Multi-Algorithm Move Quality Comparison: {game_id}', 
+                 fontsize=16, fontweight='bold')
         plt.xlabel('Move Step', fontsize=13)
         plt.ylabel('AI Evaluation Score', fontsize=13)
         plt.ylim(-0.05, 1.05)
@@ -294,8 +345,109 @@ class MoveScorer:
         plt.legend(loc='best', fontsize=11)
         plt.tight_layout()
         
-        output_filename = f"{game_id}_multi_algo_analysis.png"
-        output_path = os.path.join(self.charts_dir, output_filename)
+        output_path = os.path.join(self.charts_dir, f"{game_id}_comparison.png")
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        return output_path
+
+    def _generate_move_heatmap(self, df: pd.DataFrame, board: Board, game_id: str) -> str:
+        """Generate heatmap showing move quality distribution on the board."""
+        import numpy as np
+        import matplotlib.cm as cm
+        
+        # Create a heatmap matrix (board_size x board_size)
+        board_size = board.size
+        heatmap = np.zeros((board_size, board_size))
+        heatmap[:] = np.nan  # Use NaN for empty positions
+        
+        # Fill in scores for each move
+        for _, row in df.iterrows():
+            x, y = int(row['x']), int(row['y'])
+            heatmap[x][y] = row['avg_score']
+        
+        # Create the heatmap visualization
+        fig, ax = plt.subplots(figsize=(12, 12))
+        
+        # Use a colormap that highlights quality (red=bad, yellow=neutral, green=good)
+        cmap = cm.get_cmap('RdYlGn')
+        im = ax.imshow(heatmap, cmap=cmap, vmin=0, vmax=1, origin='upper')
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label('Move Quality Score', rotation=270, labelpad=20, fontsize=12)
+        
+        # Add move numbers on the heatmap
+        for _, row in df.iterrows():
+            x, y = int(row['x']), int(row['y'])
+            player = int(row['player'])
+            step = int(row['step'])
+            
+            # Choose text color based on player
+            text_color = 'white' if player == 1 else 'black'
+            marker = '●' if player == 1 else '○'
+            
+            ax.text(y, x, f'{marker}\n{step}', ha='center', va='center',
+                   color=text_color, fontsize=9, fontweight='bold')
+        
+        # Set grid
+        ax.set_xticks(np.arange(board_size))
+        ax.set_yticks(np.arange(board_size))
+        ax.set_xticklabels(range(board_size))
+        ax.set_yticklabels(range(board_size))
+        ax.grid(True, which='both', color='gray', linewidth=0.5, alpha=0.3)
+        
+        plt.title(f'Move Quality Heatmap: {game_id}', fontsize=16, fontweight='bold')
+        plt.xlabel('Y Coordinate', fontsize=13)
+        plt.ylabel('X Coordinate', fontsize=13)
+        plt.tight_layout()
+        
+        output_path = os.path.join(self.charts_dir, f"{game_id}_heatmap.png")
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        return output_path
+
+    def _generate_score_distribution(self, df: pd.DataFrame, game_id: str) -> str:
+        """Generate histogram showing distribution of move quality scores."""
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        
+        score_columns = [col for col in df.columns if col.endswith('_score')]
+        
+        # Plot histogram for each algorithm
+        for idx, col in enumerate(score_columns):
+            row = idx // 2
+            col_idx = idx % 2
+            ax = axes[row][col_idx]
+            
+            algo_name = col.replace('_score', '').title()
+            scores = df[col]
+            
+            # Create histogram
+            ax.hist(scores, bins=20, range=(0, 1), alpha=0.7, 
+                   color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'][idx % 4],
+                   edgecolor='black')
+            
+            # Add vertical lines for mean and median
+            mean_val = scores.mean()
+            median_val = scores.median()
+            ax.axvline(mean_val, color='red', linestyle='--', linewidth=2, 
+                      label=f'Mean: {mean_val:.3f}')
+            ax.axvline(median_val, color='green', linestyle=':', linewidth=2,
+                      label=f'Median: {median_val:.3f}')
+            
+            ax.set_title(f'{algo_name} Score Distribution', fontsize=12, fontweight='bold')
+            ax.set_xlabel('Score', fontsize=10)
+            ax.set_ylabel('Frequency', fontsize=10)
+            ax.legend(fontsize=9)
+            ax.grid(True, alpha=0.3)
+        
+        # Overall title
+        fig.suptitle(f'Score Distribution Analysis: {game_id}', 
+                    fontsize=16, fontweight='bold', y=0.995)
+        plt.tight_layout()
+        
+        output_path = os.path.join(self.charts_dir, f"{game_id}_distribution.png")
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         
