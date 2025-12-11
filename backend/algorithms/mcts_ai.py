@@ -26,7 +26,10 @@ def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]
 
                 for nx in range(x_min, x_max):
                     for ny in range(y_min, y_max):
-                        if board_map[nx][ny] == 0 and board.is_valid_move(nx, ny):
+                        # CRITICAL: Do NOT call is_valid_move() here!
+                        # is_valid_move() triggers forbidden-move checks (O(n²))
+                        # MCTS will check game rules during simulation
+                        if board_map[nx][ny] == 0:
                             moves.add((nx, ny))
 
     return list(moves)

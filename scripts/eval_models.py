@@ -40,16 +40,16 @@ def main():
     # Initialize engine
     engine = SelfPlayEngine(board_size=15, use_wandb=False)
     
-    # Register ALL AI algorithms
+    # Register AI algorithms
     print("\n📋 Registering AI algorithms...")
     print("-" * 60)
     
-    # Classic algorithms (fast)
+    # Classic algorithms (fast and practical)
     engine.register_ai("Greedy", GreedyAgent(distance=2))
     engine.register_ai("Minimax-D2", MinimaxAgent(depth=2, distance=2, candidate_limit=10))
     engine.register_ai("AlphaBeta-D2", AlphaBetaAgent(depth=2, distance=2, candidate_limit=10))
     
-    # MCTS algorithm (slower - optimized with reduced iterations)
+    # MCTS algorithm (FIXED: removed forbidden-move checks from candidate generation)
     engine.register_ai("MCTS-100", MCTSAgent(iteration_limit=100))
     
     # Q-Learning (DQN) - if model exists
@@ -77,8 +77,8 @@ def main():
     
     print(f"   • Games per pair: {num_games}")
     print(f"   • Total matches: {total_matches}")
-    print(f"\n⚠️  Note: MCTS will take longer due to board complexity")
-    print(f"   Estimated time: 4-6 hours")
+    print(f"\n✅ MCTS performance FIXED - expected completion: 4-6 hours")
+    print(f"   (MCTS now skips forbidden-move checks during candidate generation)")
     print("-" * 60)
     
     # Run tournament
