@@ -1,16 +1,12 @@
-# File location: frontend/ui/board_ui.py
 import tkinter as tk
 from tkinter import messagebox
 
 # --- Import Backend Logic ---
-# Ensure GameEngine is saved in backend/models/game_engine.py
 from backend.models.game_engine import GameEngine
-# Import Algorithms (Using AlphaBeta as default AI)
+# Import Algorithms
 from backend.algorithms.classic_ai import AlphaBetaAgent
 
-from backend.algorithms.qlearning_ai import QLearningAgent
-
-# --- Import UI Components (Relative imports) ---
+# --- Import UI Components ---
 from .difficulty_control import DifficultyControlUI
 from .ai_recommender import AiRecommender
 
@@ -25,8 +21,11 @@ class BoardUI(tk.Frame):
         # 1. Initialize Game Engine
         self.engine = GameEngine(size=board_size)
 
-        # 2. Initialize AI (Default medium difficulty, depth=2)
+        # 2. Initialize AI
         self.ai_agent = AlphaBetaAgent(depth=2)
+
+        # 3. Player Identity (1=Black, 2=White). Default: Human is Black (1)
+        self.human_player = 1
 
         self.pack(fill="both", expand=True)
 
@@ -55,9 +54,9 @@ class BoardUI(tk.Frame):
 
         self.control_panel = DifficultyControlUI(
             self.right_panel,
-            on_mode_change=self.handle_settings_change,
+            on_settings_change=self.handle_settings_change,  # Name updated
             on_hint=self.handle_hint_request,
-            on_reset=self.reset_game  # <--- 直接在这里传进去！
+            on_reset=self.reset_game
         )
         self.control_panel.pack(fill="both", expand=True)
 
@@ -73,35 +72,39 @@ class BoardUI(tk.Frame):
         """Reset the game"""
         print("UI: Resetting game")
         self.engine.reset_game()
-        self.canvas.delete("piece")  # Clear pieces
-        self.recommender.clear_hint()  # Clear hints
+        self.canvas.delete("piece")
+        self.recommender.clear_hint()
         self.info_label.config(text="Current Turn: Black")
-        self.canvas.delete("all")  # Refresh canvas
+        self.canvas.delete("all")
         self.draw_grid()
 
+        # Check who goes first
+        # Black (1) always goes first in Gomoku.
+        # If human_player is 2 (White), then AI (Black) must move now.
+        if self.human_player == 2:
+            print("UI: Human chose White. AI (Black) moves first.")
+            self.after(500, self.computer_move)
+
     def handle_hint_request(self):
-        """Handle hint request (Updated for Top-5 with Read-Only Backend)"""
+        """Handle hint request"""
         if self.engine.game_over:
+            return
+
+        # Only allow hints if it's actually Human's turn
+        if self.engine.current_player != self.human_player:
+            print("UI: It's not your turn!")
             return
 
         print("UI: Thinking for Top-5 hints...")
         try:
-            # --- 核心修改开始 ---
-            # 既然后端 AlphaBetaAgent 要求传 depth，我们就传给它！
-            # depth 参数可以直接从 self.ai_agent.depth 获取
-
-            # 1. 检查是不是 AlphaBetaAgent，如果是，必须传 depth
             if hasattr(self.ai_agent, '_ordered_candidates'):
-                # 获取参数数量，或者直接尝试传参
                 try:
-                    # 尝试带 depth 传参 (适配你刚才发的不可修改代码)
                     candidates = self.ai_agent._ordered_candidates(
                         self.engine.board,
                         self.engine.current_player,
                         self.ai_agent.depth
                     )
                 except TypeError:
-                    # 万一以后换回不需要 depth 的算法 (比如 Minimax)，这里做个兼容
                     candidates = self.ai_agent._ordered_candidates(
                         self.engine.board,
                         self.engine.current_player
@@ -109,33 +112,33 @@ class BoardUI(tk.Frame):
             else:
                 raise AttributeError("Agent does not support ordered candidates")
 
-            # 取前 5 个
             top_5_moves = candidates[:5]
-
             if top_5_moves:
-                print(f"Top 5 moves found: {top_5_moves}")
                 self.recommender.show_top5(top_5_moves)
-            # --- 核心修改结束 ---
 
         except Exception as e:
             print(f"AI Error: {e}")
-            # 兜底策略：如果还是出错，就用最基础的 get_move 只显示一个
             move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
             if move:
                 self.recommender.show_hint(move[0], move[1])
 
-    def handle_settings_change(self, mode, diff):
-        """Handle settings change"""
-        print(f"Settings changed -> Mode: {mode}, Difficulty: {diff}")
-        # Update AI depth based on difficulty
+    def handle_settings_change(self, color, diff):
+        """Handle settings change (Color or Difficulty)"""
+        print(f"Settings changed -> Color: {color}, Difficulty: {diff}")
+
+        # 1. Update Human Identity
+        # If user selected 'black', human is 1. If 'white', human is 2.
+        self.human_player = 1 if color == 'black' else 2
+
+        # 2. Update AI Difficulty
         if diff == 'easy':
             self.ai_agent = AlphaBetaAgent(depth=1)
         elif diff == 'medium':
             self.ai_agent = AlphaBetaAgent(depth=2)
         elif diff == 'hard':
-            print("UI: Loading DQN Agent...")
-            self.ai_agent = QLearningAgent(model_path="models/dqn_15x15_final")
+            self.ai_agent = AlphaBetaAgent(depth=3)
 
+        # 3. Reset Game to apply changes
         self.reset_game()
 
     def computer_move(self):
@@ -143,29 +146,28 @@ class BoardUI(tk.Frame):
         if self.engine.game_over:
             return
 
+        # Double check: Is it actually AI's turn?
+        # AI plays when current_player is NOT human_player
+        if self.engine.current_player == self.human_player:
+            return
+
         # 1. AI thinking
         move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
 
         if move:
             x, y = move
-
-            # --- 核心修复：在落子前，先记录当前是谁 (AI 的身份) ---
             ai_player_code = self.engine.current_player
-            # ------------------------------------------------
 
             # 2. Engine execute move
             success = self.engine.make_move(x, y)
-
             if success:
                 # 3. Draw piece
-                # 直接用刚才记录的身份来决定颜色，不再依赖引擎是否切换了回合
                 color = "black" if ai_player_code == 1 else "white"
                 self.draw_piece(x, y, color)
 
                 # 4. Check game over
-                # (这里加入 self.update() 是为了防止弹窗太快遮住棋子，建议加上)
                 if self.engine.game_over:
-                    self.update()  # 强制刷新界面显示
+                    self.update()
                     self.check_game_over()
                 else:
                     self.check_game_over()
@@ -174,6 +176,12 @@ class BoardUI(tk.Frame):
         """Player click event"""
         if self.engine.game_over:
             return
+
+        # --- IMPORTANT: Lock UI if it's AI's turn ---
+        if self.engine.current_player != self.human_player:
+            print("UI: Please wait for AI to move.")
+            return
+        # --------------------------------------------
 
         self.recommender.clear_hint()
 
@@ -186,9 +194,7 @@ class BoardUI(tk.Frame):
             return
 
         # 2. Player attempts move
-        # Record current player for drawing color
         current_color_code = self.engine.current_player
-
         success = self.engine.make_move(x, y)
 
         if success:
@@ -198,21 +204,15 @@ class BoardUI(tk.Frame):
             # 3. Check game over
             is_over = self.check_game_over()
 
-            # 4. If not over, and in PvE mode, trigger AI
-            current_mode = self.control_panel.mode_var.get()
-            if not is_over and current_mode == "pve":
-                # Delay 0.5s for better UX
+            # 4. Trigger AI (Always triggered now since PvP is gone)
+            if not is_over:
                 self.after(500, self.computer_move)
         else:
             print("Invalid move")
 
     def check_game_over(self):
-        """检查并处理游戏结束"""
+        """Check and handle game over"""
         if self.engine.game_over:
-            # --- 新增这一行：强制刷新界面，确保最后一颗子画出来后再弹窗 ---
-            self.update()
-            # --------------------------------------------------------
-
             winner = self.engine.winner
             if winner == 1:
                 messagebox.showinfo("Game Over", "Black wins!")
@@ -222,19 +222,16 @@ class BoardUI(tk.Frame):
                 messagebox.showinfo("Game Over", "Draw!")
             return True
         else:
-            # Update bottom info label
             next_player_text = "Black" if self.engine.current_player == 1 else "White"
             self.info_label.config(text=f"Current Turn: {next_player_text}")
             return False
 
     def draw_grid(self):
         """Draw board grid"""
+        # (Same as before)
         margin = self.cell_size
         width = self.cell_size * (self.board_size - 1)
-
-        # Background
         self.canvas.create_rectangle(0, 0, self.canvas_width, self.canvas_height, fill="#E3C088")
-
         for i in range(self.board_size):
             start = margin + i * self.cell_size
             end = margin + width
@@ -242,7 +239,6 @@ class BoardUI(tk.Frame):
             self.canvas.create_line(start, margin, start, end + margin)
             self.canvas.create_text(start, margin / 2, text=str(i), fill="gray")
             self.canvas.create_text(margin / 2, start, text=str(i), fill="gray")
-
         star_points = [(3, 3), (11, 3), (7, 7), (3, 11), (11, 11)]
         for x, y in star_points:
             cx = margin + x * self.cell_size
