@@ -1,10 +1,18 @@
 import os
+import logging
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from backend.models.board import Board
 from backend.models.replay import Move
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Import AI algorithms
 from backend.algorithms.classic_ai import (
@@ -21,8 +29,15 @@ try:
 except ImportError:
     MCTS_AVAILABLE = False
     MCTSAgent = None
-    print("⚠️  MCTS module not available. Install 'monte-carlo-tree-search' for MCTS support.")
+    logger.warning("MCTS module not available. Install 'monte-carlo-tree-search' for MCTS support.")
 
+# Optional: tqdm for progress bars
+try:
+    from tqdm import tqdm
+    TQDM_AVAILABLE = True
+except ImportError:
+    TQDM_AVAILABLE = False
+    logger.info("tqdm not available. Progress bars will be disabled.")
 
 
 class MoveScorer:
@@ -33,7 +48,16 @@ class MoveScorer:
     - Greedy: fast heuristic-based evaluation
     - Minimax: depth-limited search with heuristic
     - Alpha-Beta: optimized minimax with pruning
-    - MCTS: simulation-based Monte Carlo evaluation
+    - MCTS: simulation-based Monte Carlo evaluation (optional)
+    
+    Attributes:
+        charts_dir (str): Directory for saving visualization charts
+        stats_dir (str): Directory for saving statistics CSV files
+        greedy_agent (GreedyAgent): Greedy heuristic evaluator
+        minimax_agent (MinimaxAgent): Minimax search evaluator
+        alphabeta_agent (AlphaBetaAgent): Alpha-beta pruning evaluator
+        mcts_agent (MCTSAgent|None): MCTS evaluator if enabled
+        enable_mcts (bool): Whether MCTS evaluation is enabled
     """
 
     def __init__(self, enable_mcts: bool = False):
@@ -41,29 +65,40 @@ class MoveScorer:
         Initialize the move scorer with AI algorithms.
         
         Args:
-            enable_mcts: Whether to enable MCTS evaluation (slower but more accurate)
-                        Requires 'monte-carlo-tree-search' package to be installed
+            enable_mcts (bool): Whether to enable MCTS evaluation (slower but more accurate).
+                              Requires 'monte-carlo-tree-search' package to be installed.
+                              
+        Raises:
+            OSError: If output directories cannot be created
         """
         # Create output directories
         self.charts_dir = "data/charts"
         self.stats_dir = "data/stats"
         
-        for d in [self.charts_dir, self.stats_dir]:
-            if not os.path.exists(d):
-                os.makedirs(d)
+        try:
+            for d in [self.charts_dir, self.stats_dir]:
+                if not os.path.exists(d):
+                    os.makedirs(d)
+                    logger.info(f"Created directory: {d}")
+        except OSError as e:
+            logger.error(f"Failed to create output directories: {e}")
+            raise
         
         # Initialize AI agents
+        logger.info("Initializing AI agents...")
         self.greedy_agent = GreedyAgent(distance=2)
         self.minimax_agent = MinimaxAgent(depth=2, distance=2, candidate_limit=12)
         self.alphabeta_agent = AlphaBetaAgent(depth=2, distance=2, candidate_limit=12)
+        logger.info("✓ Classic AI agents initialized (Greedy, Minimax, Alpha-Beta)")
         
+        # Initialize MCTS if requested and available
         self.enable_mcts = enable_mcts and MCTS_AVAILABLE
         if enable_mcts and not MCTS_AVAILABLE:
-            print("⚠️  MCTS requested but not available. Continuing with classic algorithms only.")
+            logger.warning("MCTS requested but not available. Continuing with classic algorithms only.")
         
         if self.enable_mcts:
-            # Use fewer simulations for move analysis (faster)
             self.mcts_agent = MCTSAgent(time_limit=None, iteration_limit=100)
+            logger.info("✓ MCTS agent initialized (iteration_limit=100)")
         else:
             self.mcts_agent = None
 
@@ -137,24 +172,37 @@ class MoveScorer:
         """
         Analyze entire game using multi-algorithm scoring.
         
+        This method replays the game move-by-move, evaluating each position using
+        all enabled AI algorithms to provide comprehensive move quality analysis.
+        
         Args:
-            moves: List of moves from the game
-            game_id: Unique identifier for the game
+            moves (List[Move]): List of moves from the game
+            game_id (str): Unique identifier for the game (default: "temp")
             
         Returns:
-            Dictionary containing:
-            - DataFrame with all scores
-            - Critical moments list
-            - Chart path
-            - Statistics summary
-            - CSV path
+            Dict[str, Any]: Dictionary containing:
+                - dataframe (pd.DataFrame): Complete move analysis data
+                - score_curve (List[float]): Average scores over time
+                - critical_moments (List[Dict]): Identified brilliant moves and blunders
+                - chart_path (str): Path to main comparison chart
+                - chart_paths (Dict[str, str]): Paths to all visualization charts
+                - stats_summary (Dict): aggregate statistics
+                - csv_path (str): Path to saved CSV file
+                
+        Example:
+            >>> scorer = MoveScorer()
+            >>> result = scorer.score_moves(game.moves, game_id="game_123")
+            >>> print(result['stats_summary'])
+            {'total_moves': 50, 'mean_score': 0.62, ...}
         """
         if not moves:
+            logger.warning(f"Game {game_id}: No moves to analyze")
             return {
                 "error": "No moves to analyze",
                 "score_curve": [],
                 "critical_moments": [],
                 "chart_path": None,
+                "chart_paths": {},
                 "stats_summary": {},
                 "csv_path": None
             }
@@ -174,38 +222,60 @@ class MoveScorer:
         
         critical_moments = []
         
-        print(f"\n🎯 Analyzing game {game_id} with {len(moves)} moves...")
-        print(f"   Algorithms: Greedy, Minimax, Alpha-Beta" + (", MCTS" if self.enable_mcts else ""))
+        # Log analysis start
+        algo_names = "Greedy, Minimax, Alpha-Beta" + (", MCTS" if self.enable_mcts else "")
+        logger.info(f"🎯 Starting analysis: game_id={game_id}, moves={len(moves)}, algorithms=[{algo_names}]")
+        
+        # Create progress iterator
+        if TQDM_AVAILABLE:
+            move_iterator = tqdm(enumerate(moves), total=len(moves), 
+                               desc=f"分析 {game_id}", unit="步")
+        else:
+            move_iterator = enumerate(moves)
         
         # Replay and score each move
-        for i, move in enumerate(moves):
-            # Place the move on board
-            board.place_stone(move.x, move.y, move.player)
-            
-            # Evaluate position after this move for the player who just moved
-            scores = self._evaluate_position(board, move.player)
-            
-            # Store scores
-            for algo, score in scores.items():
-                all_scores[algo].append(score)
-            
-            # Identify critical moments based on average score
-            avg_score = sum(scores.values()) / len(scores)
-            
-            if avg_score > 0.8:
-                critical_moments.append({
-                    "step": move.step,
-                    "type": "Brilliant (妙手)"
-                })
-            elif avg_score < 0.2:
-                critical_moments.append({
-                    "step": move.step,
-                    "type": "Blunder (恶手)"
-                })
-            
-            # Progress indicator
-            if (i + 1) % 10 == 0 or (i + 1) == len(moves):
-                print(f"   Progress: {i + 1}/{len(moves)} moves analyzed")
+        for i, move in move_iterator:
+            try:
+                # Place the move on board
+                if not board.place_stone(move.x, move.y, move.player):
+                    logger.error(f"Invalid move at step {move.step}: ({move.x}, {move.y})")
+                    # Add neutral scores for invalid moves to maintain array length
+                    for algo in all_scores.keys():
+                        all_scores[algo].append(0.5)
+                    continue
+                
+                # Evaluate position after this move for the player who just moved
+                scores = self._evaluate_position(board, move.player)
+                
+                # Store scores
+                for algo, score in scores.items():
+                    all_scores[algo].append(score)
+                
+                # Identify critical moments based on average score
+                avg_score = sum(scores.values()) / len(scores)
+                
+                if avg_score > 0.8:
+                    critical_moments.append({
+                        "step": move.step,
+                        "type": "Brilliant (妙手)"
+                    })
+                    logger.debug(f"✨ Brilliant move detected at step {move.step}: score={avg_score:.3f}")
+                elif avg_score < 0.2:
+                    critical_moments.append({
+                        "step": move.step,
+                        "type": "Blunder (恶手)"
+                    })
+                    logger.debug(f"⚠️  Blunder detected at step {move.step}: score={avg_score:.3f}")
+                
+                # Progress indicator (if no tqdm)
+                if not TQDM_AVAILABLE and ((i + 1) % 10 == 0 or (i + 1) == len(moves)):
+                    logger.info(f"Progress: {i + 1}/{len(moves)} moves analyzed")
+                    
+            except Exception as e:
+                logger.error(f"Error analyzing move {i+1}: {e}", exc_info=True)
+                # Add neutral scores on error
+                for algo in all_scores.keys():
+                    all_scores[algo].append(0.5)
         
         # Create comprehensive DataFrame
         df_data = {
@@ -254,12 +324,25 @@ class MoveScorer:
         
         # Save DataFrame to CSV
         csv_path = os.path.join(self.stats_dir, f"{game_id}_multi_algo_stats.csv")
-        df.to_csv(csv_path, index=False)
-        print(f"   ✓ Saved detailed scores to {csv_path}")
+        try:
+            df.to_csv(csv_path, index=False)
+            logger.info(f"✓ Saved detailed scores to {csv_path}")
+        except Exception as e:
+            logger.error(f"Failed to save CSV: {e}")
+            csv_path = None
         
         # Generate visualizations (multiple charts)
-        chart_paths = self.generate_visualizations(df, board, game_id)
-        print(f"   ✓ Generated {len(chart_paths)} visualization charts")
+        try:
+            chart_paths = self.generate_visualizations(df, board, game_id)
+            logger.info(f"✓ Generated {len(chart_paths)} visualization charts")
+        except Exception as e:
+            logger.error(f"Failed to generate visualizations: {e}", exc_info=True)
+            chart_paths = {}
+        
+        # Log completion with summary
+        logger.info(f"✅ Analysis complete: mean_score={stats_summary['mean_score']}, "
+                   f"brilliant={stats_summary['brilliant_count']}, "
+                   f"blunders={stats_summary['blunder_count']}")
         
         return {
             "dataframe": df,
