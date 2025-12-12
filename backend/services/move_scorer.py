@@ -7,11 +7,34 @@ from typing import List, Dict, Any, Optional, Tuple
 from backend.models.board import Board
 from backend.models.replay import Move
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# Import configuration
+from backend.config.scoring_config import (
+    GREEDY_DISTANCE,
+    MINIMAX_DEPTH, MINIMAX_DISTANCE, MINIMAX_CANDIDATE_LIMIT,
+    ALPHABETA_DEPTH, ALPHABETA_DISTANCE, ALPHABETA_CANDIDATE_LIMIT,
+    MCTS_ITERATION_LIMIT,
+    BRILLIANT_MOVE_THRESHOLD,
+    BLUNDER_MOVE_THRESHOLD,
+    CHARTS_DIR,
+    STATS_DIR,
+    CHART_DPI,
+    BOARD_SIZE,
+    LOG_LEVEL,
+    LOG_FORMAT,
+    ENABLE_EVALUATION_CACHE,
+    MAX_CACHE_SIZE
 )
+
+# Import utility functions
+from backend.utils.scoring_utils import (
+    normalize_score_sigmoid,
+    validate_moves_list,
+    classify_move_quality,
+    ensure_directory_exists
+)
+
+# Configure logging
+logging.basicConfig(level=getattr(logging, LOG_LEVEL), format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 # Import AI algorithms
@@ -71,24 +94,36 @@ class MoveScorer:
         Raises:
             OSError: If output directories cannot be created
         """
-        # Create output directories
-        self.charts_dir = "data/charts"
-        self.stats_dir = "data/stats"
+        # Initialize output directories using configuration
+        self.charts_dir = CHARTS_DIR
+        self.stats_dir = STATS_DIR
         
+        # Ensure directories exist
         try:
-            for d in [self.charts_dir, self.stats_dir]:
-                if not os.path.exists(d):
-                    os.makedirs(d)
-                    logger.info(f"Created directory: {d}")
+            ensure_directory_exists(self.charts_dir)
+            ensure_directory_exists(self.stats_dir)
         except OSError as e:
             logger.error(f"Failed to create output directories: {e}")
             raise
         
-        # Initialize AI agents
+        # Initialize evaluation cache if enabled
+        self._evaluation_cache = {} if ENABLE_EVALUATION_CACHE else None
+        self._cache_hits = 0
+        self._cache_misses = 0
+        
+        # Initialize AI agents using configuration
         logger.info("Initializing AI agents...")
-        self.greedy_agent = GreedyAgent(distance=2)
-        self.minimax_agent = MinimaxAgent(depth=2, distance=2, candidate_limit=12)
-        self.alphabeta_agent = AlphaBetaAgent(depth=2, distance=2, candidate_limit=12)
+        self.greedy_agent = GreedyAgent(distance=GREEDY_DISTANCE)
+        self.minimax_agent = MinimaxAgent(
+            depth=MINIMAX_DEPTH,
+            distance=MINIMAX_DISTANCE,
+            candidate_limit=MINIMAX_CANDIDATE_LIMIT
+        )
+        self.alphabeta_agent = AlphaBetaAgent(
+            depth=ALPHABETA_DEPTH,
+            distance=ALPHABETA_DISTANCE,
+            candidate_limit=ALPHABETA_CANDIDATE_LIMIT
+        )
         logger.info("✓ Classic AI agents initialized (Greedy, Minimax, Alpha-Beta)")
         
         # Initialize MCTS if requested and available
@@ -97,7 +132,8 @@ class MoveScorer:
             logger.warning("MCTS requested but not available. Continuing with classic algorithms only.")
         
         if self.enable_mcts:
-            self.mcts_agent = MCTSAgent(time_limit=None, iteration_limit=100)
+            self.mcts_agent = MCTSAgent(time_limit=None, iteration_limit=MCTS_ITERATION_LIMIT)
+            logger.info(f"✓ MCTS agent initialized (iteration_limit={MCTS_ITERATION_LIMIT})")
             logger.info("✓ MCTS agent initialized (iteration_limit=100)")
         else:
             self.mcts_agent = None
@@ -195,6 +231,7 @@ class MoveScorer:
             >>> print(result['stats_summary'])
             {'total_moves': 50, 'mean_score': 0.62, ...}
         """
+        # Add input validation
         if not moves:
             logger.warning(f"Game {game_id}: No moves to analyze")
             return {
@@ -207,9 +244,23 @@ class MoveScorer:
                 "csv_path": None
             }
         
+        # Validate moves using utility function
+        try:
+            validate_moves_list(moves, board_size=BOARD_SIZE)
+        except ValueError as e:
+            logger.error(f"Game {game_id}: Move validation failed: {e}")
+            return {
+                "error": str(e),
+                "score_curve": [],
+                "critical_moments": [],
+                "chart_path": None,
+                "chart_paths": {},
+                "stats_summary": {},
+                "csv_path": None
+            }
+        
         # Initialize board for replay
-        board_size = 15  # Standard Gomoku board
-        board = Board(size=board_size)
+        board = Board(size=BOARD_SIZE)
         
         # Data collection lists
         all_scores = {
@@ -251,16 +302,16 @@ class MoveScorer:
                 for algo, score in scores.items():
                     all_scores[algo].append(score)
                 
-                # Identify critical moments based on average score
+                # Identify critical moments using configuration thresholds
                 avg_score = sum(scores.values()) / len(scores)
                 
-                if avg_score > 0.8:
+                if avg_score >= BRILLIANT_MOVE_THRESHOLD:
                     critical_moments.append({
                         "step": move.step,
                         "type": "Brilliant (妙手)"
                     })
                     logger.debug(f"✨ Brilliant move detected at step {move.step}: score={avg_score:.3f}")
-                elif avg_score < 0.2:
+                elif avg_score < BLUNDER_MOVE_THRESHOLD:
                     critical_moments.append({
                         "step": move.step,
                         "type": "Blunder (恶手)"
