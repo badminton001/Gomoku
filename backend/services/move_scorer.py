@@ -1,66 +1,40 @@
-import os
 import logging
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any
 from backend.models.board import Board
 from backend.models.replay import Move
 
-# Import configuration
 from backend.config.scoring_config import (
-    GREEDY_DISTANCE,
-    MINIMAX_DEPTH, MINIMAX_DISTANCE, MINIMAX_CANDIDATE_LIMIT,
+    GREEDY_DISTANCE, MINIMAX_DEPTH, MINIMAX_DISTANCE, MINIMAX_CANDIDATE_LIMIT,
     ALPHABETA_DEPTH, ALPHABETA_DISTANCE, ALPHABETA_CANDIDATE_LIMIT,
-    MCTS_ITERATION_LIMIT,
-    BRILLIANT_MOVE_THRESHOLD,
-    BLUNDER_MOVE_THRESHOLD,
-    CHARTS_DIR,
-    STATS_DIR,
-    CHART_DPI,
-    BOARD_SIZE,
-    LOG_LEVEL,
-    LOG_FORMAT,
-    ENABLE_EVALUATION_CACHE,
-    MAX_CACHE_SIZE
+    MCTS_ITERATION_LIMIT, BRILLIANT_MOVE_THRESHOLD, BLUNDER_MOVE_THRESHOLD,
+    CHARTS_DIR, STATS_DIR, CHART_DPI, BOARD_SIZE, LOG_LEVEL, LOG_FORMAT,
+    ENABLE_EVALUATION_CACHE, MAX_CACHE_SIZE
 )
-
-# Import utility functions
 from backend.utils.scoring_utils import (
-    normalize_score_sigmoid,
-    validate_moves_list,
-    classify_move_quality,
-    ensure_directory_exists
+    normalize_score_sigmoid, validate_moves_list, classify_move_quality, ensure_directory_exists
+)
+from backend.algorithms.classic_ai import (
+    GreedyAgent, MinimaxAgent, AlphaBetaAgent, evaluate_board as classic_evaluate_board
 )
 
-# Configure logging
 logging.basicConfig(level=getattr(logging, LOG_LEVEL), format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
-# Import AI algorithms
-from backend.algorithms.classic_ai import (
-    GreedyAgent, 
-    MinimaxAgent, 
-    AlphaBetaAgent,
-    evaluate_board as classic_evaluate_board
-)
-
-# MCTS is optional - only import if available
 try:
     from backend.algorithms.mcts_ai import MCTSAgent
     MCTS_AVAILABLE = True
 except ImportError:
-    MCTS_AVAILABLE = False
-    MCTSAgent = None
-    logger.warning("MCTS module not available. Install 'monte-carlo-tree-search' for MCTS support.")
+    MCTS_AVAILABLE, MCTSAgent = False, None
+    logger.warning("MCTS not available")
 
-# Optional: tqdm for progress bars
 try:
     from tqdm import tqdm
     TQDM_AVAILABLE = True
 except ImportError:
     TQDM_AVAILABLE = False
-    logger.info("tqdm not available. Progress bars will be disabled.")
 
 
 class MoveScorer:
@@ -94,47 +68,27 @@ class MoveScorer:
         Raises:
             OSError: If output directories cannot be created
         """
-        # Initialize output directories using configuration
-        self.charts_dir = CHARTS_DIR
-        self.stats_dir = STATS_DIR
+        self.charts_dir, self.stats_dir = CHARTS_DIR, STATS_DIR
+        ensure_directory_exists(self.charts_dir)
+        ensure_directory_exists(self.stats_dir)
         
-        # Ensure directories exist
-        try:
-            ensure_directory_exists(self.charts_dir)
-            ensure_directory_exists(self.stats_dir)
-        except OSError as e:
-            logger.error(f"Failed to create output directories: {e}")
-            raise
-        
-        # Initialize evaluation cache if enabled
         self._evaluation_cache = {} if ENABLE_EVALUATION_CACHE else None
-        self._cache_hits = 0
-        self._cache_misses = 0
+        self._cache_hits = self._cache_misses = 0
         
-        # Initialize AI agents using configuration
         logger.info("Initializing AI agents...")
         self.greedy_agent = GreedyAgent(distance=GREEDY_DISTANCE)
         self.minimax_agent = MinimaxAgent(
-            depth=MINIMAX_DEPTH,
-            distance=MINIMAX_DISTANCE,
-            candidate_limit=MINIMAX_CANDIDATE_LIMIT
+            depth=MINIMAX_DEPTH, distance=MINIMAX_DISTANCE, candidate_limit=MINIMAX_CANDIDATE_LIMIT
         )
         self.alphabeta_agent = AlphaBetaAgent(
-            depth=ALPHABETA_DEPTH,
-            distance=ALPHABETA_DISTANCE,
-            candidate_limit=ALPHABETA_CANDIDATE_LIMIT
+            depth=ALPHABETA_DEPTH, distance=ALPHABETA_DISTANCE, candidate_limit=ALPHABETA_CANDIDATE_LIMIT
         )
-        logger.info("✓ Classic AI agents initialized (Greedy, Minimax, Alpha-Beta)")
+        logger.info("✓ Classic AI agents initialized")
         
-        # Initialize MCTS if requested and available
         self.enable_mcts = enable_mcts and MCTS_AVAILABLE
-        if enable_mcts and not MCTS_AVAILABLE:
-            logger.warning("MCTS requested but not available. Continuing with classic algorithms only.")
-        
         if self.enable_mcts:
             self.mcts_agent = MCTSAgent(time_limit=None, iteration_limit=MCTS_ITERATION_LIMIT)
-            logger.info(f"✓ MCTS agent initialized (iteration_limit={MCTS_ITERATION_LIMIT})")
-            logger.info("✓ MCTS agent initialized (iteration_limit=100)")
+            logger.info(f"✓ MCTS initialized (iter={MCTS_ITERATION_LIMIT})")
         else:
             self.mcts_agent = None
 
@@ -153,54 +107,36 @@ class MoveScorer:
         scores = {}
         import math
         
-        # 1. GREEDY: Fast heuristic evaluation (no search)
         greedy_score = classic_evaluate_board(board, player)
         scores['greedy'] = 1 / (1 + math.exp(-greedy_score / 1000))
         
-        # 2. MINIMAX: Depth-2 search with minimax algorithm
-        # Create a temporary copy to run minimax search
         search_board = copy.deepcopy(board)
         try:
-            # Run minimax to get the best value from this position
             minimax_value, _ = self.minimax_agent._minimax(
-                search_board, 
-                depth=2, 
-                current_player=player, 
-                max_player=player
+                search_board, depth=2, current_player=player, max_player=player
             )
-            # Normalize: minimax returns large values for wins, negative for losses
-            # Map to [0, 1] using sigmoid
             scores['minimax'] = 1 / (1 + math.exp(-minimax_value / 10000))
         except Exception as e:
-            print(f"Minimax evaluation error: {e}")
-            scores['minimax'] = scores['greedy']  # Fallback
+            logger.error(f"Minimax error: {e}")
+            scores['minimax'] = scores['greedy']
         
-        # 3. ALPHA-BETA: Depth-2-3 search with pruning
         search_board = copy.deepcopy(board)
         try:
-            # Run alpha-beta search to get position value
             ab_value, _ = self.alphabeta_agent._alphabeta(
-                search_board,
-                depth=2,
-                alpha=-math.inf,
-                beta=math.inf,
-                current_player=player,
-                max_player=player
+                search_board, depth=2, alpha=-math.inf, beta=math.inf,
+                current_player=player, max_player=player
             )
-            # Normalize using same sigmoid as minimax
             scores['alphabeta'] = 1 / (1 + math.exp(-ab_value / 10000))
         except Exception as e:
-            print(f"Alpha-Beta evaluation error: {e}")
-            scores['alphabeta'] = scores['greedy']  # Fallback
+            logger.error(f"Alpha-Beta error: {e}")
+            scores['alphabeta'] = scores['greedy']
         
-        # 4. MCTS: Simulation-based evaluation (if enabled)
         if self.enable_mcts and self.mcts_agent:
             try:
-                mcts_score = self.mcts_agent.evaluate_board(board, player)
-                scores['mcts'] = mcts_score
+                scores['mcts'] = self.mcts_agent.evaluate_board(board, player)
             except Exception as e:
-                print(f"MCTS evaluation error: {e}")
-                scores['mcts'] = 0.5  # Neutral score on error
+                logger.error(f"MCTS error: {e}")
+                scores['mcts'] = 0.5
         
         return scores
 
@@ -259,73 +195,44 @@ class MoveScorer:
                 "csv_path": None
             }
         
-        # Initialize board for replay
         board = Board(size=BOARD_SIZE)
-        
-        # Data collection lists
-        all_scores = {
-            'greedy': [],
-            'minimax': [],
-            'alphabeta': [],
-        }
+        all_scores = {'greedy': [], 'minimax': [], 'alphabeta': []}
         if self.enable_mcts:
             all_scores['mcts'] = []
-        
         critical_moments = []
         
-        # Log analysis start
         algo_names = "Greedy, Minimax, Alpha-Beta" + (", MCTS" if self.enable_mcts else "")
-        logger.info(f"🎯 Starting analysis: game_id={game_id}, moves={len(moves)}, algorithms=[{algo_names}]")
+        logger.info(f"🎯 Analyzing game_id={game_id}, moves={len(moves)}, algorithms=[{algo_names}]")
         
-        # Create progress iterator
-        if TQDM_AVAILABLE:
-            move_iterator = tqdm(enumerate(moves), total=len(moves), 
-                               desc=f"分析 {game_id}", unit="步")
-        else:
-            move_iterator = enumerate(moves)
+        move_iterator = enumerate(moves) if not TQDM_AVAILABLE else tqdm(
+            enumerate(moves), total=len(moves), desc=f"分析 {game_id}", unit="步"
+        )
         
-        # Replay and score each move
         for i, move in move_iterator:
             try:
-                # Place the move on board
                 if not board.place_stone(move.x, move.y, move.player):
                     logger.error(f"Invalid move at step {move.step}: ({move.x}, {move.y})")
-                    # Add neutral scores for invalid moves to maintain array length
-                    for algo in all_scores.keys():
+                    for algo in all_scores:
                         all_scores[algo].append(0.5)
                     continue
                 
-                # Evaluate position after this move for the player who just moved
                 scores = self._evaluate_position(board, move.player)
-                
-                # Store scores
                 for algo, score in scores.items():
                     all_scores[algo].append(score)
                 
-                # Identify critical moments using configuration thresholds
                 avg_score = sum(scores.values()) / len(scores)
-                
                 if avg_score >= BRILLIANT_MOVE_THRESHOLD:
-                    critical_moments.append({
-                        "step": move.step,
-                        "type": "Brilliant (妙手)"
-                    })
-                    logger.debug(f"✨ Brilliant move detected at step {move.step}: score={avg_score:.3f}")
+                    critical_moments.append({"step": move.step, "type": "Brilliant (妙手)"})
+                    logger.debug(f"✨ Brilliant move at step {move.step}: {avg_score:.3f}")
                 elif avg_score < BLUNDER_MOVE_THRESHOLD:
-                    critical_moments.append({
-                        "step": move.step,
-                        "type": "Blunder (恶手)"
-                    })
-                    logger.debug(f"⚠️  Blunder detected at step {move.step}: score={avg_score:.3f}")
+                    critical_moments.append({"step": move.step, "type": "Blunder (恶手)"})
+                    logger.debug(f"⚠️  Blunder at step {move.step}: {avg_score:.3f}")
                 
-                # Progress indicator (if no tqdm)
                 if not TQDM_AVAILABLE and ((i + 1) % 10 == 0 or (i + 1) == len(moves)):
-                    logger.info(f"Progress: {i + 1}/{len(moves)} moves analyzed")
-                    
+                    logger.info(f"Progress: {i + 1}/{len(moves)} moves")
             except Exception as e:
                 logger.error(f"Error analyzing move {i+1}: {e}", exc_info=True)
-                # Add neutral scores on error
-                for algo in all_scores.keys():
+                for algo in all_scores:
                     all_scores[algo].append(0.5)
         
         # Create comprehensive DataFrame
