@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from backend.algorithms.mcts_ai import get_neighbor_moves
 from backend.models.board import Board
 
 
@@ -17,6 +16,34 @@ class SearchMetrics:
     elapsed_ms: float
     explored_nodes: int
     candidate_moves: int
+
+
+def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
+    """
+    Get valid moves within a distance-limited neighborhood of existing stones.
+    This is a standalone copy to avoid circular dependency with mcts_ai.
+    """
+    if board.move_count == 0:
+        return [(board.size // 2, board.size // 2)]
+
+    moves = set()
+    size = board.size
+    board_map = board.board
+
+    for x in range(size):
+        for y in range(size):
+            if board_map[x][y] != 0:
+                x_min = max(0, x - distance)
+                x_max = min(size, x + distance + 1)
+                y_min = max(0, y - distance)
+                y_max = min(size, y + distance + 1)
+
+                for nx in range(x_min, x_max):
+                    for ny in range(y_min, y_max):
+                        if board_map[nx][ny] == 0 and board.is_valid_move(nx, ny):
+                            moves.add((nx, ny))
+
+    return list(moves)
 
 
 def load_ai_config(path: str) -> Dict[str, Any]:
