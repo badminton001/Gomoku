@@ -90,7 +90,7 @@ class SelfPlayEngine:
         Args:
             ai1_name: 先手AI名称
             ai2_name: 后手AI名称
-            verbose: 是否打印详细信息
+            verbose: 是否打印详细信息（包括每步棋）
             
         Returns:
             GameResult对象
@@ -108,34 +108,76 @@ class SelfPlayEngine:
         max_moves = self.board_size * self.board_size
         winner = 'draw'
         
+        if verbose:
+            print(f"\n   {'='*50}")
+            print(f"   Match: {ai1_name} (⚫) vs {ai2_name} (⚪)")
+            print(f"   {'='*50}")
+        
         while move_count < max_moves:
             # 选择当前AI
             current_ai = ai1 if current_player == 1 else ai2
+            current_name = ai1_name if current_player == 1 else ai2_name
+            player_symbol = "⚫" if current_player == 1 else "⚪"
             
-            # 计时下棋
+            if verbose:
+                print(f"\n   Move {move_count + 1}: {current_name} {player_symbol} thinking...", end="", flush=True)
+            
+            # 计时下棋 - 允许多次重试非法走法
+            max_retries = 3
+            move = None
+            retry_count = 0
+            
             start_time = time.time()
-            try:
-                move = current_ai.get_move(board, current_player)
-            except Exception as e:
-                if verbose:
-                    print(f"  ⚠ AI error: {e}")
-                winner = 'player2' if current_player == 1 else 'player1'
-                break
+            for retry_count in range(max_retries):
+                try:
+                    move = current_ai.get_move(board, current_player)
+                except KeyboardInterrupt:
+                    if verbose:
+                        print(f"\n⚠️  Match interrupted by user (Ctrl+C)")
+                    raise  # Re-raise to stop the tournament
+                except Exception as e:
+                    if verbose:
+                        print(f" ERROR: {e}")
+                        import traceback
+                        print("\n❌ Exception traceback:")
+                        traceback.print_exc()
+                    winner = 'player2' if current_player == 1 else 'player1'
+                    break
                 
+                if move is None:  # 无合法走法
+                    continue
+                
+                x, y = move
+                
+                # 验证走法合法性
+                if board.is_valid_move(x, y):
+                    # 走法有效，跳出重试循环
+                    break
+                else:
+                    if verbose:
+                        print(f" INVALID: ({x}, {y}) - Retry {retry_count + 1}/{max_retries}", end="", flush=True)
+                    move = None
+            
             elapsed = time.time() - start_time
             
-            if move is None:  # 无合法走法
-                winner = 'draw'
-                break
-            
-            x, y = move
-            
-            # 验证走法合法性
-            if not board.is_valid_move(x, y):
-                if verbose:
-                    print(f"  ⚠ Invalid move: ({x}, {y})")
-                winner = 'player2' if current_player == 1 else 'player1'
-                break
+            # 所有重试都失败，尝试随机选择一个合法走法
+            if move is None:
+                from backend.algorithms.mcts_ai import get_neighbor_moves
+                candidates = get_neighbor_moves(board, distance=2)
+                valid_candidates = [m for m in candidates if board.is_valid_move(m[0], m[1])]
+                
+                if valid_candidates:
+                    import random
+                    move = random.choice(valid_candidates)
+                    x, y = move
+                    if verbose:
+                        print(f" - Auto-selected valid move: ({x}, {y})")
+                else:
+                    # 完全没有合法走法，判负
+                    if verbose:
+                        print(f" - No valid moves available")
+                    winner = 'player2' if current_player == 1 else 'player1'
+                    break
             
             move_history.append((x, y))
             
@@ -148,18 +190,28 @@ class SelfPlayEngine:
             # 执行走法
             board.place_stone(x, y, current_player)
             
+            if verbose:
+                print(f" ({x},{y}) [{elapsed:.2f}s]")
+            
             # 检查胜负
             result = board.get_game_result()
             if result == current_player:
                 winner = 'player1' if current_player == 1 else 'player2'
+                if verbose:
+                    print(f"\n   🎉 {current_name} WINS!")
                 break
             elif result == -1:  # 平局
                 winner = 'draw'
+                if verbose:
+                    print(f"\n   🤝 DRAW!")
                 break
             
             # 切换玩家
             current_player = 3 - current_player
             move_count += 1
+        
+        if verbose:
+            print(f"   {'='*50}\n")
         
         # 计算平均时间
         avg_time_p1 = np.mean(player1_times) if player1_times else 0.0
@@ -228,7 +280,7 @@ class SelfPlayEngine:
                 
                 game_start = start_game if (i == start_i and j == start_j) else 0
                 for game_num in range(game_start, num_games_per_pair):
-                    result = self.play_single_match(ai1_name, ai2_name, verbose=False)
+                    result = self.play_single_match(ai1_name, ai2_name, verbose=True)  # Enable detailed output
                     all_results.append(result)
                     completed += 1
                     
