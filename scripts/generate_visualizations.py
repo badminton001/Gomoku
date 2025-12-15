@@ -37,7 +37,7 @@ def load_data():
     return data, win_rates, time_stats, matchup_matrix, elo_ratings
 
 
-# ==================== Plotly Interactive Charts ====================
+# Plotly Interactive Charts
 
 def plot_matchup_heatmap(matchup_matrix, output_dir):
     """1. Matchup Matrix Heatmap"""
@@ -167,7 +167,7 @@ def plot_move_distribution(data, output_dir):
     print("✓ [5/15] Move distribution")
 
 
-# ==================== Matplotlib/Seaborn Static Charts ====================
+# Matplotlib/Seaborn Static Charts
 
 def plot_algorithm_ranking(win_rates, output_dir):
     """6. Algorithm Ranking Chart"""
@@ -452,13 +452,13 @@ def plot_summary_dashboard(win_rates, time_stats, elo_ratings, output_dir):
     plt.close()
 
 
-# ==================== Main Function ====================
+# Main Function
 
 def main():
     """Generate all visualizations"""
-    print("=" * 60)
+    print("-" * 60)
     print(" Visualization Generation")
-    print("=" * 60)
+    print("-" * 60)
     
     # Create output directory
     output_dir = create_output_dir()
@@ -491,9 +491,9 @@ def main():
     plot_moves_vs_time(data, output_dir)
     plot_summary_dashboard(win_rates, time_stats, elo_ratings, output_dir)
     
-    print("\n" + "=" * 60)
+    print("\n" + "-" * 60)
     print(" Visualization Complete!")
-    print("=" * 60)
+    print("-" * 60)
     print(f"\n✅ Generated 15 high-quality visualizations")
     print(f"📁 Location: {output_dir}/")
     print(f"\n🎯 Next step: Run scripts/generate_reports.py to create final report")

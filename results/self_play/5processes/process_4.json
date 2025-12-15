@@ -1,0 +1,939 @@
+{
+  "process_id": 4,
+  "matchups": [
+    [
+      "AlphaBeta",
+      "MCTS-500"
+    ],
+    [
+      "DQN",
+      "Minimax"
+    ],
+    [
+      "Hybrid",
+      "Minimax"
+    ]
+  ],
+  "games_per_pair": 17,
+  "results": [
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.460023832321167,
+      "player2_avg_time": 1.0665448904037476,
+      "timestamp": "2025-12-15T17:58:13.135063"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.9399278163909912,
+      "player2_avg_time": 0.9807148456573487,
+      "timestamp": "2025-12-15T17:58:22.740390"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5470789909362793,
+      "player2_avg_time": 0.8945833444595337,
+      "timestamp": "2025-12-15T17:58:29.054118"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.6329631328582763,
+      "player2_avg_time": 0.986986494064331,
+      "timestamp": "2025-12-15T17:58:37.153866"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.47316718101501465,
+      "player2_avg_time": 0.5549705624580383,
+      "timestamp": "2025-12-15T17:58:41.741107"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.8065669139226278,
+      "player2_avg_time": 1.110752781232198,
+      "timestamp": "2025-12-15T17:58:53.248702"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4748527526855469,
+      "player2_avg_time": 1.059054434299469,
+      "timestamp": "2025-12-15T17:58:59.861205"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.9992644786834717,
+      "player2_avg_time": 1.1104165077209474,
+      "timestamp": "2025-12-15T17:59:10.410815"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5344323635101318,
+      "player2_avg_time": 0.7725076675415039,
+      "timestamp": "2025-12-15T17:59:16.174052"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.8965587615966797,
+      "player2_avg_time": 0.9115090370178223,
+      "timestamp": "2025-12-15T17:59:25.214391"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 11,
+      "player1_avg_time": 0.6385192076365153,
+      "player2_avg_time": 0.9996953964233398,
+      "timestamp": "2025-12-15T17:59:34.044995"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.615125036239624,
+      "player2_avg_time": 0.9322992324829101,
+      "timestamp": "2025-12-15T17:59:41.784216"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.45963168144226074,
+      "player2_avg_time": 1.2948428988456726,
+      "timestamp": "2025-12-15T17:59:49.263347"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.7856428623199463,
+      "player2_avg_time": 0.9010399341583252,
+      "timestamp": "2025-12-15T17:59:57.697341"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 11,
+      "player1_avg_time": 0.9264585177103678,
+      "player2_avg_time": 0.8775059223175049,
+      "timestamp": "2025-12-15T18:00:07.643621"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.801124382019043,
+      "player2_avg_time": 0.7622249603271485,
+      "timestamp": "2025-12-15T18:00:15.460368"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.49286980628967286,
+      "player2_avg_time": 1.0460102558135986,
+      "timestamp": "2025-12-15T18:00:22.109795"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.7606615543365478,
+      "player2_avg_time": 0.9582527160644532,
+      "timestamp": "2025-12-15T18:00:30.704935"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.47697863578796384,
+      "player2_avg_time": 1.0979965925216675,
+      "timestamp": "2025-12-15T18:00:37.481814"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.8865437110265096,
+      "player2_avg_time": 1.0697568257649739,
+      "timestamp": "2025-12-15T18:00:49.220187"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5447335243225098,
+      "player2_avg_time": 0.956934928894043,
+      "timestamp": "2025-12-15T18:00:55.773659"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.6208996772766113,
+      "player2_avg_time": 0.9688820838928223,
+      "timestamp": "2025-12-15T18:01:05.313828"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4922584056854248,
+      "player2_avg_time": 0.6058571934700012,
+      "timestamp": "2025-12-15T18:01:10.199582"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.784409475326538,
+      "player2_avg_time": 0.8880663871765136,
+      "timestamp": "2025-12-15T18:01:18.563575"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5548474788665771,
+      "player2_avg_time": 1.0504834055900574,
+      "timestamp": "2025-12-15T18:01:25.539746"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.8866068840026855,
+      "player2_avg_time": 1.0172902584075927,
+      "timestamp": "2025-12-15T18:01:35.061296"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5457463264465332,
+      "player2_avg_time": 1.1358412504196167,
+      "timestamp": "2025-12-15T18:01:42.333392"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.8407352447509766,
+      "player2_avg_time": 1.0916184902191162,
+      "timestamp": "2025-12-15T18:01:51.997281"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.6485763549804687,
+      "player2_avg_time": 0.9430058002471924,
+      "timestamp": "2025-12-15T18:01:59.013777"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 1.083125638961792,
+      "player2_avg_time": 0.9210114002227783,
+      "timestamp": "2025-12-15T18:02:09.035061"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.48235740661621096,
+      "player2_avg_time": 1.228098452091217,
+      "timestamp": "2025-12-15T18:02:16.360389"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.8733851909637451,
+      "player2_avg_time": 1.3663615226745605,
+      "timestamp": "2025-12-15T18:02:27.559122"
+    },
+    {
+      "player1": "AlphaBeta",
+      "player2": "MCTS-500",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5022833824157715,
+      "player2_avg_time": 1.2402759194374084,
+      "timestamp": "2025-12-15T18:02:35.033232"
+    },
+    {
+      "player1": "MCTS-500",
+      "player2": "AlphaBeta",
+      "winner": "player2",
+      "total_moves": 10,
+      "player1_avg_time": 0.8009027481079102,
+      "player2_avg_time": 0.8515207290649414,
+      "timestamp": "2025-12-15T18:02:43.295350"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0015644232432047527,
+      "player2_avg_time": 0.9237945079803467,
+      "timestamp": "2025-12-15T18:02:48.849585"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.510584545135498,
+      "player2_avg_time": 0.0014587044715881348,
+      "timestamp": "2025-12-15T18:02:51.409339"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0013590653737386067,
+      "player2_avg_time": 0.9208647012710571,
+      "timestamp": "2025-12-15T18:02:56.944219"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5106496810913086,
+      "player2_avg_time": 0.0012065768241882324,
+      "timestamp": "2025-12-15T18:02:59.504896"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0011519193649291992,
+      "player2_avg_time": 0.9313387870788574,
+      "timestamp": "2025-12-15T18:03:05.099840"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.51201491355896,
+      "player2_avg_time": 0.001301407814025879,
+      "timestamp": "2025-12-15T18:03:07.667575"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0012483596801757812,
+      "player2_avg_time": 0.9230759541193644,
+      "timestamp": "2025-12-15T18:03:13.213521"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.500382661819458,
+      "player2_avg_time": 0.0010480284690856934,
+      "timestamp": "2025-12-15T18:03:15.720640"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0014205773671468098,
+      "player2_avg_time": 0.9169894456863403,
+      "timestamp": "2025-12-15T18:03:21.231100"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5227729797363281,
+      "player2_avg_time": 0.0009514093399047852,
+      "timestamp": "2025-12-15T18:03:23.848771"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.001267870267232259,
+      "player2_avg_time": 0.9304620822270712,
+      "timestamp": "2025-12-15T18:03:29.439728"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5105966091156006,
+      "player2_avg_time": 0.0014615058898925781,
+      "timestamp": "2025-12-15T18:03:31.999560"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0012075503667195637,
+      "player2_avg_time": 0.9206163088480631,
+      "timestamp": "2025-12-15T18:03:37.532567"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5147377014160156,
+      "player2_avg_time": 0.001921236515045166,
+      "timestamp": "2025-12-15T18:03:40.113940"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0014677047729492188,
+      "player2_avg_time": 0.9146665334701538,
+      "timestamp": "2025-12-15T18:03:45.611317"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.5068736553192139,
+      "player2_avg_time": 0.0017075538635253906,
+      "timestamp": "2025-12-15T18:03:48.153044"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0019636154174804688,
+      "player2_avg_time": 0.9202651182810465,
+      "timestamp": "2025-12-15T18:03:53.689012"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.507395601272583,
+      "player2_avg_time": 0.0015313029289245605,
+      "timestamp": "2025-12-15T18:03:56.232115"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0015246470769246419,
+      "player2_avg_time": 0.8944043715794882,
+      "timestamp": "2025-12-15T18:04:01.608208"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4932520866394043,
+      "player2_avg_time": 0.001419365406036377,
+      "timestamp": "2025-12-15T18:04:04.081883"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.001365343729654948,
+      "player2_avg_time": 0.8910141785939535,
+      "timestamp": "2025-12-15T18:04:09.436160"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.504378366470337,
+      "player2_avg_time": 0.0014085769653320312,
+      "timestamp": "2025-12-15T18:04:11.966235"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.001428047815958659,
+      "player2_avg_time": 0.9104428688685099,
+      "timestamp": "2025-12-15T18:04:17.437460"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4991786956787109,
+      "player2_avg_time": 0.0020030736923217773,
+      "timestamp": "2025-12-15T18:04:19.941366"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0016151666641235352,
+      "player2_avg_time": 0.8972313006718954,
+      "timestamp": "2025-12-15T18:04:25.337515"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.49938144683837893,
+      "player2_avg_time": 0.0015602707862854004,
+      "timestamp": "2025-12-15T18:04:27.842752"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0011224746704101562,
+      "player2_avg_time": 0.8887346585591634,
+      "timestamp": "2025-12-15T18:04:33.181894"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4960168838500977,
+      "player2_avg_time": 0.0017794370651245117,
+      "timestamp": "2025-12-15T18:04:35.669097"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0014179547627766926,
+      "player2_avg_time": 0.9052867889404297,
+      "timestamp": "2025-12-15T18:04:41.110807"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4921445846557617,
+      "player2_avg_time": 0.0018832087516784668,
+      "timestamp": "2025-12-15T18:04:43.579062"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0014799038569132488,
+      "player2_avg_time": 0.892681360244751,
+      "timestamp": "2025-12-15T18:04:48.945272"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4941399574279785,
+      "player2_avg_time": 0.0015274882316589355,
+      "timestamp": "2025-12-15T18:04:51.423201"
+    },
+    {
+      "player1": "DQN",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 12,
+      "player1_avg_time": 0.0016865332921346028,
+      "player2_avg_time": 0.8895184199015299,
+      "timestamp": "2025-12-15T18:04:56.770431"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "DQN",
+      "winner": "player1",
+      "total_moves": 9,
+      "player1_avg_time": 0.4884279727935791,
+      "player2_avg_time": 0.0015726685523986816,
+      "timestamp": "2025-12-15T18:04:59.218862"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 36,
+      "player1_avg_time": 0.18704489866892496,
+      "player2_avg_time": 1.2922886212666829,
+      "timestamp": "2025-12-15T18:05:25.848963"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.063067878995623,
+      "player2_avg_time": 0.10959163078894982,
+      "timestamp": "2025-12-15T18:05:42.157695"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 22,
+      "player1_avg_time": 0.3049374927173961,
+      "player2_avg_time": 1.0414871302517978,
+      "timestamp": "2025-12-15T18:05:56.972519"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.060538649559021,
+      "player2_avg_time": 0.10535513437711276,
+      "timestamp": "2025-12-15T18:06:13.190778"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 24,
+      "player1_avg_time": 0.17632333437601724,
+      "player2_avg_time": 1.44465970993042,
+      "timestamp": "2025-12-15T18:06:32.643729"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0576006174087524,
+      "player2_avg_time": 0.10235867133507362,
+      "timestamp": "2025-12-15T18:06:48.781856"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player1",
+      "total_moves": 31,
+      "player1_avg_time": 0.23956820368766785,
+      "player2_avg_time": 1.0842605590820313,
+      "timestamp": "2025-12-15T18:07:08.880927"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0401888745171683,
+      "player2_avg_time": 0.10170391889718863,
+      "timestamp": "2025-12-15T18:07:24.766295"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 24,
+      "player1_avg_time": 0.10886222124099731,
+      "player2_avg_time": 1.305950919787089,
+      "timestamp": "2025-12-15T18:07:41.745129"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0374472311564855,
+      "player2_avg_time": 0.10125868137066181,
+      "timestamp": "2025-12-15T18:07:57.589456"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 44,
+      "player1_avg_time": 0.24225378036499023,
+      "player2_avg_time": 1.32286845554005,
+      "timestamp": "2025-12-15T18:08:32.026350"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0504583631243025,
+      "player2_avg_time": 0.10175710458021897,
+      "timestamp": "2025-12-15T18:08:48.056198"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 20,
+      "player1_avg_time": 0.22685444355010986,
+      "player2_avg_time": 1.0580642223358154,
+      "timestamp": "2025-12-15T18:09:00.905384"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0480945621218,
+      "player2_avg_time": 0.10296005469102126,
+      "timestamp": "2025-12-15T18:09:16.917791"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 24,
+      "player1_avg_time": 0.15737428267796835,
+      "player2_avg_time": 1.454663077990214,
+      "timestamp": "2025-12-15T18:09:36.262240"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0403608254023962,
+      "player2_avg_time": 0.10278501877417931,
+      "timestamp": "2025-12-15T18:09:52.163496"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 20,
+      "player1_avg_time": 0.24566183090209961,
+      "player2_avg_time": 0.9984458208084106,
+      "timestamp": "2025-12-15T18:10:04.606174"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0429803473608834,
+      "player2_avg_time": 0.10588877017681415,
+      "timestamp": "2025-12-15T18:10:20.585036"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 48,
+      "player1_avg_time": 0.25723347067832947,
+      "player2_avg_time": 1.3864044447739918,
+      "timestamp": "2025-12-15T18:11:00.034559"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.040269204548427,
+      "player2_avg_time": 0.10541875545795147,
+      "timestamp": "2025-12-15T18:11:15.971883"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 36,
+      "player1_avg_time": 0.2623933023876614,
+      "player2_avg_time": 1.2727486160066392,
+      "timestamp": "2025-12-15T18:11:43.606624"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0425142730985368,
+      "player2_avg_time": 0.10105023017296424,
+      "timestamp": "2025-12-15T18:11:59.516601"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player1",
+      "total_moves": 31,
+      "player1_avg_time": 0.24626334011554718,
+      "player2_avg_time": 1.0819617589314778,
+      "timestamp": "2025-12-15T18:12:19.686241"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0403647593089513,
+      "player2_avg_time": 0.10157194504371056,
+      "timestamp": "2025-12-15T18:12:35.573320"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 16,
+      "player1_avg_time": 0.21871915459632874,
+      "player2_avg_time": 1.0448153614997864,
+      "timestamp": "2025-12-15T18:12:45.683064"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0393399851662772,
+      "player2_avg_time": 0.10129803877610427,
+      "timestamp": "2025-12-15T18:13:01.552389"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 24,
+      "player1_avg_time": 0.10978760321935017,
+      "player2_avg_time": 1.3106680909792583,
+      "timestamp": "2025-12-15T18:13:18.599571"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.045759184019906,
+      "player2_avg_time": 0.10324188379141,
+      "timestamp": "2025-12-15T18:13:34.583942"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 20,
+      "player1_avg_time": 0.243097186088562,
+      "player2_avg_time": 1.0203853130340577,
+      "timestamp": "2025-12-15T18:13:47.219297"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0444860288075037,
+      "player2_avg_time": 0.10569900732774001,
+      "timestamp": "2025-12-15T18:14:03.219279"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 22,
+      "player1_avg_time": 0.11158711260015314,
+      "player2_avg_time": 1.0744558030908757,
+      "timestamp": "2025-12-15T18:14:16.266295"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.0446952411106654,
+      "player2_avg_time": 0.1109307729280912,
+      "timestamp": "2025-12-15T18:14:32.335168"
+    },
+    {
+      "player1": "Hybrid",
+      "player2": "Minimax",
+      "winner": "player2",
+      "total_moves": 16,
+      "player1_avg_time": 0.18797698616981506,
+      "player2_avg_time": 1.1359239220619202,
+      "timestamp": "2025-12-15T18:14:42.928436"
+    },
+    {
+      "player1": "Minimax",
+      "player2": "Hybrid",
+      "winner": "player1",
+      "total_moves": 27,
+      "player1_avg_time": 1.031855923788888,
+      "player2_avg_time": 0.1054533628317026,
+      "timestamp": "2025-12-15T18:14:58.745892"
+    }
+  ],
+  "timestamp": "2025-12-15T18:14:58.747482"
+}

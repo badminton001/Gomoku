@@ -4,7 +4,7 @@ import torch
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.algorithms.qlearning_ai import GomokuEnv
+from backend.ai.advanced.qlearning_ai import GomokuEnv
 from stable_baselines3 import DQN
 from stable_baselines3.common.callbacks import CheckpointCallback
 

@@ -1,3 +1,6 @@
+"""
+Classic AI algorithms (Random, Greedy).
+"""
 import json
 import math
 import random
@@ -12,17 +15,13 @@ from backend.engine.board import Board
 
 @dataclass
 class SearchMetrics:
-    """Lightweight search statistics for benchmarking."""
-
+    """Lightweight search statistics."""
     elapsed_ms: float
     explored_nodes: int
     candidate_moves: int
 
 
 def load_ai_config(path: str) -> Dict[str, Any]:
-    """
-    Load hyperparameter configuration from a JSON file.
-    """
     config_path = Path(path)
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -31,37 +30,30 @@ def load_ai_config(path: str) -> Dict[str, Any]:
 
 
 def random_move(board: Board, distance: int = 2) -> Tuple[int, int]:
-    """
-    Return a random legal move near existing stones (distance-limited neighborhood).
-    Falls back to board center if nothing is available.
-    """
+    """Return a random legal move near existing stones."""
     candidates = get_neighbor_moves(board, distance=distance)
     if not candidates:
-        center = (board.size // 2, board.size // 2)
-        return center
-    # Filter valid
+        return (board.size // 2, board.size // 2)
+        
     valid = [m for m in candidates if board.is_valid_move(m[0], m[1])]
     if not valid:
-        # Try full board random
+        # Fallback to full board scan
         empty = []
         for x in range(board.size):
             for y in range(board.size):
                 if board.is_empty(x, y): empty.append((x,y))
-        if empty: return random.choice(empty)
-        return (7,7)
+        return random.choice(empty) if empty else (-1, -1)
         
     return random.choice(valid)
 
 
 class RandomAgent:
-    """Simply picks a random valid move nearby."""
+    """Random move agent."""
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
         return random_move(board, distance=2)
 
 class GreedyAgent:
-    """
-    Optimized One-ply greedy agent using local evaluation.
-    """
+    """1-Ply Greedy Agent (Local Evaluation)."""
 
     def __init__(self, distance: int = 2):
         self.distance = distance
@@ -74,20 +66,17 @@ class GreedyAgent:
             return (board.size // 2, board.size // 2)
 
         best_score = -math.inf
-        # Default to random choice among candidates if all scores equal
+        # Default to random among best
         best_move = candidates[0] 
         explored = 0
 
         directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
         def evaluate_point(x: int, y: int, target: int) -> float:
-            # Score of chains formed by 'target' at (x,y)
             score = 0.0
-            # Temporarily place stone to check offense
             board.board[x][y] = target
             
             for dx, dy in directions:
-                # Count consecutive stones
                 count = 1
                 # Forward
                 tx, ty = x + dx, y + dy
@@ -101,48 +90,45 @@ class GreedyAgent:
                     count += 1
                     tx -= dx
                     ty -= dy
+                    
+                # Basic Score
+                if count >= 5: score += 100000
+                elif count == 4: score += 5000
+                elif count == 3: score += 1000
+                elif count == 2: score += 100
                 
-                # Check openness (simple check)
-                # (Omitted logic for brevity in this sync, using simplified scoring)
-                
-                if count >= 5:
-                    score += 100000.0
-                elif count == 4:
-                    score += 10000.0
-                elif count == 3:
-                    score += 1000.0 
-                elif count == 2:
-                     score += 100.0
-            
-            board.board[x][y] = 0 # Restore
+            board.board[x][y] = 0
             return score
 
-        # Filter valid candidates first
-        valid_candidates = []
-        for mx, my in candidates:
-            if board.is_valid_move(mx, my):
-                valid_candidates.append((mx, my))
+        # Evaluate Candidates
+        opponent = 3 - player
+        scored_moves = []
         
-        if not valid_candidates:
-             return (board.size // 2, board.size // 2)
-
-        for mx, my in valid_candidates:
+        for cx, cy in candidates:
+            if not board.is_valid_move(cx, cy): 
+                continue
+                
             explored += 1
+            attack = evaluate_point(cx, cy, player)
+            defense = evaluate_point(cx, cy, opponent)
             
-            # 1. Offense Score (My potential gain)
-            attack_score = evaluate_point(mx, my, player)
+            # Simple heuristic: Attack + Defense bias
+            total = attack + (defense * 0.9)
+            scored_moves.append(((cx, cy), total))
             
-            # 2. Defense Score (Opponent's potential gain if I don't block)
-            defense_score = evaluate_point(mx, my, 3 - player)
-            
-            final_score = attack_score + defense_score 
-            
-            if final_score > best_score:
-                best_score = final_score
-                best_move = (mx, my)
+            if total > best_score:
+                best_score = total
+                best_move = (cx, cy)
+        
+        # Randomize among top to avoid deterministic loops
+        if scored_moves:
+             top_moves = sorted(scored_moves, key=lambda x: x[1], reverse=True)
+             if len(top_moves) > 3 and abs(top_moves[0][1] - top_moves[2][1]) < 10:
+                  best_move = random.choice([m[0] for m in top_moves[:3]])
+             else:
+                  best_move = top_moves[0][0]
 
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        self.last_metrics = SearchMetrics(
-            elapsed_ms=elapsed_ms, explored_nodes=explored, candidate_moves=len(candidates)
-        )
+        elapsed = (time.perf_counter() - start) * 1000
+        self.last_metrics = SearchMetrics(elapsed, explored, len(candidates))
+        
         return best_move

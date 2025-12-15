@@ -1,15 +1,20 @@
+"""
+Replay Data Models.
+
+Defines Pydantic models for game moves and replay metadata.
+"""
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
 
 class Move(BaseModel):
-    step: int = Field(..., description="第几手")
-    player: int = Field(..., description="1=黑棋, 2=白棋")
-    x: int = Field(..., description="横坐标")
-    y: int = Field(..., description="纵坐标")
-    timestamp: float = Field(..., description="时间戳")
-    evaluation_score: Optional[float] = None # AI 评分
-    is_critical: bool = False # 是否是关键手
+    step: int = Field(..., description="Move number")
+    player: int = Field(..., description="1=Black, 2=White")
+    x: int = Field(..., description="Coordinate X")
+    y: int = Field(..., description="Coordinate Y")
+    timestamp: float = Field(..., description="Timestamp")
+    evaluation_score: Optional[float] = None
+    is_critical: bool = False
 
 class GameReplay(BaseModel):
     game_id: str
@@ -17,7 +22,7 @@ class GameReplay(BaseModel):
     end_time: Optional[datetime] = None
     winner: int
     moves: List[Move] = []
-    stats: Optional[Dict] = None # 统计数据
+    stats: Optional[Dict] = None
 
     class Config:
         json_schema_extra = {

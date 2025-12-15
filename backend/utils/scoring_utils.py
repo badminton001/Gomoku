@@ -10,7 +10,7 @@ Author: Person B - Game Replay & Scoring Team
 import math
 import logging
 from typing import List, Dict, Any, Tuple, Optional
-from backend.models.replay import Move
+from backend.analysis.replay import Move
 from backend.config.scoring_config import (
     SIGMOID_SCALE_GREEDY,
     SIGMOID_SCALE_SEARCH,

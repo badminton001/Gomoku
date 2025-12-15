@@ -1,4 +1,5 @@
 import logging
+import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
@@ -16,9 +17,8 @@ from backend.config.scoring_config import (
 from backend.utils.scoring_utils import (
     normalize_score_sigmoid, validate_moves_list, classify_move_quality, ensure_directory_exists
 )
-from backend.ai.basic.classic_ai import (
-    GreedyAgent, MinimaxAgent, AlphaBetaAgent, evaluate_board as classic_evaluate_board
-)
+from backend.ai.basic.classic_ai import GreedyAgent
+from backend.ai.basic.strong_ai import AlphaBetaAgent
 
 logging.basicConfig(level=getattr(logging, LOG_LEVEL), format=LOG_FORMAT)
 logger = logging.getLogger(__name__)
@@ -43,31 +43,11 @@ class MoveScorer:
     
     Evaluates each move using multiple AI algorithms:
     - Greedy: fast heuristic-based evaluation
-    - Minimax: depth-limited search with heuristic
     - Alpha-Beta: optimized minimax with pruning
     - MCTS: simulation-based Monte Carlo evaluation (optional)
-    
-    Attributes:
-        charts_dir (str): Directory for saving visualization charts
-        stats_dir (str): Directory for saving statistics CSV files
-        greedy_agent (GreedyAgent): Greedy heuristic evaluator
-        minimax_agent (MinimaxAgent): Minimax search evaluator
-        alphabeta_agent (AlphaBetaAgent): Alpha-beta pruning evaluator
-        mcts_agent (MCTSAgent|None): MCTS evaluator if enabled
-        enable_mcts (bool): Whether MCTS evaluation is enabled
     """
 
     def __init__(self, enable_mcts: bool = False):
-        """
-        Initialize the move scorer with AI algorithms.
-        
-        Args:
-            enable_mcts (bool): Whether to enable MCTS evaluation (slower but more accurate).
-                              Requires 'monte-carlo-tree-search' package to be installed.
-                              
-        Raises:
-            OSError: If output directories cannot be created
-        """
         self.charts_dir, self.stats_dir = CHARTS_DIR, STATS_DIR
         ensure_directory_exists(self.charts_dir)
         ensure_directory_exists(self.stats_dir)
@@ -77,11 +57,9 @@ class MoveScorer:
         
         logger.info("Initializing AI agents...")
         self.greedy_agent = GreedyAgent(distance=GREEDY_DISTANCE)
-        self.minimax_agent = MinimaxAgent(
-            depth=MINIMAX_DEPTH, distance=MINIMAX_DISTANCE, candidate_limit=MINIMAX_CANDIDATE_LIMIT
-        )
+        # Minimax removed (redundant with AlphaBeta)
         self.alphabeta_agent = AlphaBetaAgent(
-            depth=ALPHABETA_DEPTH, distance=ALPHABETA_DISTANCE, candidate_limit=ALPHABETA_CANDIDATE_LIMIT
+            depth=ALPHABETA_DEPTH, time_limit=0.5 # Fast evaluation
         )
         logger.info("✓ Classic AI agents initialized")
         
@@ -93,40 +71,30 @@ class MoveScorer:
             self.mcts_agent = None
 
     def _evaluate_position(self, board: Board, player: int) -> Dict[str, float]:
-        """
-        Evaluate a board position using all enabled AI algorithms.
-        Each algorithm uses its actual search method to provide independent evaluations.
-        
-        Args:
-            board: Current board state
-            player: Player to evaluate for (1 or 2)
-            
-        Returns:
-            Dictionary with scores from each algorithm (normalized to 0-1 range)
-        """
         scores = {}
         import math
         
-        greedy_score = classic_evaluate_board(board, player)
-        scores['greedy'] = 1 / (1 + math.exp(-greedy_score / 1000))
+        def safe_sigmoid(x, scale):
+            val = -x / scale
+            # Clamp to prevent overflow
+            if val > 700: return 0.0 # exp(700) is huge, 1/(1+inf) -> 0
+            if val < -700: return 1.0 # exp(-700) is 0, 1/1 -> 1
+            return 1 / (1 + math.exp(val))
+
+        # Greedy Score (using AlphaBeta static eval as heuristic)
+        # Scale needs to handle 10,000,000 (Win)
+        # Using 2,000,000 as scale makes 5 consecutive (10M) -> 1.0
+        raw_score = self.alphabeta_agent.evaluate_board(board, player)
+        scores['greedy'] = safe_sigmoid(raw_score, 100000.0) 
         
+        # AlphaBeta Search Score
         search_board = copy.deepcopy(board)
         try:
-            minimax_value, _ = self.minimax_agent._minimax(
-                search_board, depth=2, current_player=player, max_player=player
+            # depth=2 search
+            ab_value, _ = self.alphabeta_agent.alpha_beta_search(
+                search_board, player, depth=2, alpha=-math.inf, beta=math.inf
             )
-            scores['minimax'] = 1 / (1 + math.exp(-minimax_value / 10000))
-        except Exception as e:
-            logger.error(f"Minimax error: {e}")
-            scores['minimax'] = scores['greedy']
-        
-        search_board = copy.deepcopy(board)
-        try:
-            ab_value, _ = self.alphabeta_agent._alphabeta(
-                search_board, depth=2, alpha=-math.inf, beta=math.inf,
-                current_player=player, max_player=player
-            )
-            scores['alphabeta'] = 1 / (1 + math.exp(-ab_value / 10000))
+            scores['alphabeta'] = safe_sigmoid(ab_value, 100000.0)
         except Exception as e:
             logger.error(f"Alpha-Beta error: {e}")
             scores['alphabeta'] = scores['greedy']
@@ -196,7 +164,7 @@ class MoveScorer:
             }
         
         board = Board(size=BOARD_SIZE)
-        all_scores = {'greedy': [], 'minimax': [], 'alphabeta': []}
+        all_scores = {'greedy': [], 'alphabeta': []}
         if self.enable_mcts:
             all_scores['mcts'] = []
         critical_moments = []

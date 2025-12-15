@@ -45,7 +45,7 @@ def create_ai_agents() -> Dict[str, any]:
         agents["DQN"] = None
     
     try:
-        agents["Hybrid"] = HybridAgent(model_path="models/sl_model_v1.pth", device="cpu")
+        agents["Hybrid"] = HybridAgent(model_path="models/sl_model_kaggle.pth", device="cpu")
     except Exception as e:
         print(f"[警告] Hybrid加载失败: {e}")
         agents["Hybrid"] = None
@@ -225,6 +225,8 @@ def main():
     parser = argparse.ArgumentParser(description="五进程并行自对弈评估（真正的并行）")
     parser.add_argument('--games-per-pair', type=int, default=17, 
                        help='每个配对的游戏数（单向）')
+    parser.add_argument('--threads', type=int, default=5,
+                       help='并行进程数 (为了兼容接口，实际可能固定为5)')
     parser.add_argument('--merge-only', action='store_true',
                        help='仅合并现有结果，不运行新评估')
     
@@ -253,8 +255,8 @@ def main():
     print(f"总游戏数: {total_games}")
     print(f"并行进程: 5")
     
-    # 分配任务到5个进程
-    num_processes = 5
+    # 分配任务到 N 个进程
+    num_processes = args.threads
     batches = [[] for _ in range(num_processes)]
     for i, matchup in enumerate(matchups):
         batches[i % num_processes].append(matchup)

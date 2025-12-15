@@ -1,3 +1,6 @@
+"""
+Gomoku AI API Backend.
+"""
 import uvicorn
 import time
 import json
@@ -8,9 +11,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from backend.engine.board import Board
 
-# ==========================================
-# 1. Initialize & Cap of logs
-# ==========================================
+# 1. Logging Configuration
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -21,11 +22,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("backend")
 
-app = FastAPI(title="Gomoku-AI (HeptagonPan)") 
+app = FastAPI(title="Gomoku-AI API") 
 
-# ==========================================
-# 2. def data type
-# ==========================================
+# 2. Data Models
 class BoardState(BaseModel):
     board: List[List[int]]       
     current_player: int          
@@ -37,9 +36,7 @@ class MoveResponse(BaseModel):
     processing_time: float
     debug_info: str
 
-# ==========================================
-# 3. API's acheivement
-# ==========================================
+# 3. API Endpoints
 @app.get("/")
 def root():
     return {"message": "Gomoku AI Backend is Running", "docs_url": "http://127.0.0.1:8000/docs"}
@@ -63,43 +60,60 @@ def predict_move(state: BoardState):
     
     try:
         # Reconstruct Board
-        # Note: Frontend sends list[list[int]], Board expects it internally or we set it manually
-        # Board init creates empty.
         size = len(state.board)
         game_board = Board(size=size)
         game_board.board = state.board
         
-        # Calculate move_count (important for some AIs)
+        # Calculate move_count
         count = 0
         for r in range(size):
             for c in range(size):
                 if state.board[r][c] != 0: count += 1
         game_board.move_count = count
         
+        # Load Config
+        config = {}
+        config_path = "config/ai_config.json"
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = json.load(f)
+        
         # Select Agent
         if state.algorithm.lower() == "greedy":
             from backend.ai.basic.classic_ai import GreedyAgent
-            agent = GreedyAgent(distance=2)
+            dist = config.get("greedy", {}).get("distance", 2)
+            agent = GreedyAgent(distance=dist)
+        elif state.algorithm.lower() == "hybrid":
+            from backend.ai.advanced.hybrid_ai import HybridAgent
+            # Try to load best model, fallback to base
+            model_path = "models/sl_model_kaggle.pth"
+            if not os.path.exists(model_path): model_path = "models/sl_model_v1.pth"
+            agent = HybridAgent(model_path=model_path, device="cpu")
+        elif state.algorithm.lower() == "dqn":
+            from backend.ai.advanced.qlearning_ai import QLearningAgent
+            model_path = "models/dqn_15x15_final" 
+            agent = QLearningAgent(model_path=model_path)
         elif state.algorithm.lower() in ["alphabeta", "strong"]:
              from backend.ai.basic.strong_ai import AlphaBetaAgent
-             # Use a reasonable default depth or config
-             depth = 2 
-             agent = AlphaBetaAgent(depth=depth, time_limit=2.0)
-        elif state.algorithm.lower() == "random":
-             from backend.ai.basic.classic_ai import RandomAgent
-             agent = RandomAgent()
+             cfg = config.get("alpha_beta", {})
+             depth = cfg.get("depth", 2)
+             time_limit = 2.0 # Keep safe limit for API
+             agent = AlphaBetaAgent(depth=depth, time_limit=time_limit)
+        elif state.algorithm.lower() == "mcts":
+             from backend.ai.advanced.mcts_ai import MCTSAgent
+             agent = MCTSAgent(iteration_limit=500)
         else:
-             # Default to Strong AI
-             from backend.ai.basic.strong_ai import AlphaBetaAgent
-             agent = AlphaBetaAgent(depth=2, time_limit=2.0)
-             
+             # Default
+             from backend.ai.basic.classic_ai import GreedyAgent
+             agent = GreedyAgent()
+
         # Get Move
         move = agent.get_move(game_board, state.current_player)
         
         if move:
             best_x, best_y = move
         else:
-            best_x, best_y = -1, -1 # Should not happen if board not full
+            best_x, best_y = -1, -1 
             
         duration = time.time() - start_time
         logger.info(f"AI decided: ({best_x}, {best_y}) in {duration:.4f}s")

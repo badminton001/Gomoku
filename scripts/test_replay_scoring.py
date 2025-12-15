@@ -6,8 +6,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.services.move_scorer import MoveScorer
-from backend.models.replay import Move, GameReplay
+from backend.api.services.move_scorer import MoveScorer
+from backend.analysis.replay import Move, GameReplay
 from datetime import datetime
 import time
 
@@ -69,7 +69,7 @@ def test_basic_scoring():
     stats = result['stats_summary']
     
     # Validate DataFrame structure
-    required_columns = ['step', 'player', 'x', 'y', 'greedy_score', 'minimax_score', 
+    required_columns = ['step', 'player', 'x', 'y', 'greedy_score', 
                        'alphabeta_score', 'avg_score', 'score_variance', 'move_type']
     for col in required_columns:
         assert col in df.columns, f"Missing column: {col}"
@@ -83,7 +83,7 @@ def test_basic_scoring():
         print(f"   {key}: {value}")
     
     # Validate score ranges
-    for col in ['greedy_score', 'minimax_score', 'alphabeta_score', 'avg_score']:
+    for col in ['greedy_score', 'alphabeta_score', 'avg_score']:
         assert df[col].min() >= 0, f"{col} has values < 0"
         assert df[col].max() <= 1, f"{col} has values > 1"
     
@@ -91,7 +91,7 @@ def test_basic_scoring():
     
     # Show sample moves
     print(f"\n📝 Sample Move Analysis (first 5 moves):")
-    print(df[['step', 'player', 'greedy_score', 'minimax_score', 'alphabeta_score', 
+    print(df[['step', 'player', 'greedy_score', 'alphabeta_score', 
              'avg_score', 'move_type']].head().to_string())
     
     # Check files were created

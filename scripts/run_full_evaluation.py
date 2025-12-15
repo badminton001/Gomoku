@@ -101,7 +101,7 @@ def main():
         success = run_command(
             [
                 sys.executable,
-                "scripts/parallel_eval_5threads.py",
+                "scripts/parallel_eval_5processes.py",
                 "--games-per-pair", str(args.games_per_pair),
                 "--threads", str(args.threads)
             ],

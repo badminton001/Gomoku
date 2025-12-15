@@ -1,30 +1,48 @@
-# Gomoku AI
+# Gomoku AI Battle Arena
 
-基于 AI 算法的五子棋游戏系统
+A comprehensive Gomoku (Five-in-a-Row) game system featuring advanced AI agents, automated performance tuning, and cross-platform GUI.
 
-## 技术栈
+## Project Structure
 
-- 后端：FastAPI + Python
-- 前端：Tkinter
-- 数据可视化：matplotlib + seaborn
-- 算法：numpy + pandas
+*   **backend/Engine**: Core game logic (15x15 Board, Rules).
+*   **backend/AI**: Pluggable AI modules:
+    *   **Greedy**: Heuristic-based fast agent.
+    *   **AlphaBeta (Minimax)**: Strong rule-based agent with pruning and iterative deepening.
+    *   **Hybrid**: Policy Network (SL) guided search with defense subsystems.
+    *   **DQN**: Reinforcement Learning agent (Experimental).
+*   **backend/API**: FastAPI service for AI inference and configuration.
+*   **frontend**: Tkinter-based GUI for Human vs AI play.
+*   **scripts**: Performance analysis, model training, and replay tools.
 
-## 快速开始
+## Getting Started
 
-### 后端
+### 1. Installation
 ```bash
-cd backend
 pip install -r requirements.txt
-python main.py
 ```
 
-## 经典博弈算法（Person C 交付）
-- 路径：`backend/algorithms/classic_ai.py`
-- 四种算法：随机、贪心（启发式）、Minimax、Alpha-Beta（统一评估函数与邻域候选）。
-- 配置：`backend/config/ai_config.json` 可调搜索深度、候选数、邻域半径等超参数。
-- 基准：`python backend/benchmarks/run_classic_benchmark.py` 输出耗时、候选数、节点数及启发式质量。
-
-## 测试
+### 2. Run GUI (Play)
 ```bash
-python -m unittest discover backend/tests
+python frontend/gui.py
 ```
+
+### 3. Run Backend API (Server)
+```bash
+python backend/api/main.py
+```
+*   API Docs: http://localhost:8000/docs
+
+### 4. Performance Tuning
+```bash
+# Analyze AI performance
+python scripts/analyze_performance.py
+
+# Auto-tune AI hyperparameters
+python backend/tune_ai.py
+```
+
+## Key Features
+*   **Hybrid AI**: Combines Neural Network intuition with tactical search.
+*   **Move Scoring**: Real-time evaluation and "Brilliant/Blunder" detection.
+*   **Replay System**: Save and analyze full game records.
+*   **Auto-Tuning**: Optuna integration for parameter optimization.

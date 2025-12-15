@@ -11,9 +11,7 @@ import os
 from joblib import Parallel, delayed
 from typing import List, Tuple, Optional, Dict
 
-# =============================================================================
 # 1. BOARD & ENGINE (Simplified)
-# =============================================================================
 
 class Board:
     def __init__(self, size: int = 15) -> None:
@@ -91,9 +89,7 @@ def get_neighbor_moves(board, distance=2):
                             moves.add((nx, ny))
     return list(moves)
 
-# =============================================================================
 # 2. AI AGENTS
-# =============================================================================
 
 SCORE_FIVE = 10000000
 SCORE_LIVE_4 = 1000000
@@ -233,9 +229,7 @@ class RandomAgent:
         if not moves: return (7,7)
         return random.choice(moves)
 
-# =============================================================================
 # 3. PARALLEL DATA GENERATION
-# =============================================================================
 
 def play_one_game(teacher_depth, opponent_type):
     # worker function for Parallel
@@ -294,10 +288,6 @@ def generate_parallel(total_games=1000):
     print(f"Generating Parallel Dataset ({total_games} games)...")
     start = time.time()
     
-    # Configuration
-    # 200 vs Random, 300 vs Greedy, 500 vs Strong
-    # Parallel execution
-    
     n_jobs = 4 # Kaggle has 4 cores usually
     
     tasks = []
@@ -325,9 +315,7 @@ def generate_parallel(total_games=1000):
     
     return dataset
 
-# =============================================================================
 # 4. TRAINING
-# =============================================================================
 
 class Net(nn.Module):
     def __init__(self): 

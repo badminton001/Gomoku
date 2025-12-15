@@ -7,7 +7,7 @@ including AI agent parameters, evaluation thresholds, and output settings.
 Author: Person B - Game Replay & Scoring Team
 """
 
-# ==================== AI Agent Configuration ====================
+# AI Agent Configuration
 
 # Greedy Agent
 GREEDY_DISTANCE = 2  # Search distance for candidate moves
@@ -25,25 +25,25 @@ ALPHABETA_CANDIDATE_LIMIT = 12  # Maximum candidates
 # MCTS Agent
 MCTS_TIME_LIMIT = None  # Time limit in seconds (None = use iteration limit)
 MCTS_ITERATION_LIMIT = 100  # Number of MCTS simulations per move
-MCTS_EXPLORATION_CONSTANT = 1.414  # UCT exploration parameter (√2)
+MCTS_EXPLORATION_CONSTANT = 1.414  # UCT exploration parameter (sqrt(2))
 
-# ==================== Scoring Thresholds ====================
+# Scoring Thresholds
 
 # Move quality classification
-BRILLIANT_MOVE_THRESHOLD = 0.8  # Score >= this = brilliant move (妙手)
-BLUNDER_MOVE_THRESHOLD = 0.2  # Score < this = blunder (恶手)
+BRILLIANT_MOVE_THRESHOLD = 0.8  # Score >= this = brilliant move
+BLUNDER_MOVE_THRESHOLD = 0.2  # Score < this = blunder
 
 # Critical moment detection
 CRITICAL_SCORE_DROP = 0.15  # Drop >= this between moves = critical moment
 SIGNIFICANT_SCORE_CHANGE = 0.10  # Threshold for significant changes
 
-# ==================== Score Normalization ====================
+# Score Normalization
 
 # Sigmoid normalization parameters
 SIGMOID_SCALE_GREEDY = 1000  # Scale factor for greedy scores
 SIGMOID_SCALE_SEARCH = 10000  # Scale factor for search algorithm scores
 
-# ==================== Output Settings ====================
+# Output Settings
 
 # Directory structure
 CHARTS_DIR = "data/charts"  # Directory for visualization charts
@@ -56,7 +56,7 @@ CHART_HEATMAP_SUFFIX = "heatmap"  # Heatmap chart suffix
 CHART_DISTRIBUTION_SUFFIX = "distribution"  # Score distribution chart suffix
 STATS_CSV_SUFFIX = "multi_algo_stats"  # Statistics CSV suffix
 
-# ==================== Visualization Settings ====================
+# Visualization Settings
 
 # Chart dimensions
 CHART_WIDTH = 14  # Figure width in inches
@@ -74,7 +74,7 @@ COLOR_AVERAGE = '#000000'  # Black
 HEATMAP_COLORMAP = 'RdYlGn'  # Red-Yellow-Green scale
 HEATMAP_BOARD_COLOR = '#f0f0f0'  # Light gray for empty cells
 
-# ==================== Performance Settings ====================
+# Performance Settings
 
 # Caching
 ENABLE_EVALUATION_CACHE = True  # Whether to cache board evaluations
@@ -84,17 +84,17 @@ MAX_CACHE_SIZE = 10000  # Maximum number of cached evaluations
 BATCH_SIZE = 50  # Number of moves to process before checkpointing
 
 # Logging
-LOG_LEVEL = 'INFO'  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_LEVEL = 'INFO'
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 LOG_PROGRESS_INTERVAL = 10  # Log progress every N moves (if no tqdm)
 
-# ==================== Board Settings ====================
+# Board Settings
 
 # Standard Gomoku
 BOARD_SIZE = 15  # 15x15 board
 WIN_LENGTH = 5  # 5 consecutive stones to win
 
-# ==================== Validation Settings ====================
+# Validation Settings
 
 # Input validation
 VALIDATE_MOVES = True  # Whether to validate move list before processing
@@ -105,7 +105,7 @@ MAX_MOVES_FOR_ANALYSIS = 500  # Maximum moves (prevent excessive processing)
 MIN_COORDINATE = 0
 MAX_COORDINATE = BOARD_SIZE - 1
 
-# ==================== Export Settings ====================
+# Export Settings
 
 # CSV export
 CSV_DECIMAL_PLACES = 4  # Decimal places for scores in CSV
