@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from backend.models.board import Board
+from backend.engine.board import Board
 
 
 @dataclass
@@ -162,7 +162,7 @@ class SelfPlayEngine:
             
             # 所有重试都失败，尝试随机选择一个合法走法
             if move is None:
-                from backend.algorithms.mcts_ai import get_neighbor_moves
+                from backend.ai.advanced.mcts_ai import get_neighbor_moves
                 candidates = get_neighbor_moves(board, distance=2)
                 valid_candidates = [m for m in candidates if board.is_valid_move(m[0], m[1])]
                 
