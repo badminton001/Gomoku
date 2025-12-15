@@ -321,9 +321,8 @@ class Board:
         current_player = 1 if (self.move_count % 2 == 0) else 2
 
         # 禁手只对黑棋（先手）生效
-        if current_player == 1:
-            if self._is_forbidden_move_black(x, y):
-                return False
+            # Standard Gomoku Rules (Forbidden Moves Disabled)
+            pass
 
         return True
 

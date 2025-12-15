@@ -1,0 +1,21 @@
+--- Turn 1 (Player 1) ---
+Verification Scores (Top 5): ['Move (7,9): -0.0', 'Move (8,8): -0.0', 'Move (7,5): -0.0', 'Move (4,12): -0.0', 'Move (6,7): -0.0'] ...
+Selected Move: (7, 9)
+--- Turn 2 (Player 1) ---
+Verification Scores (Top 5): ['Move (7,8): -0.0', 'Move (6,9): -0.0', 'Move (7,6): -0.0', 'Move (8,9): -0.0', 'Move (5,9): -0.0'] ...
+Selected Move: (7, 8)
+--- Turn 3 (Player 1) ---
+  [Defense] Forced Defense against 2 threats: [(4, 10), (8, 6)]
+Verification Scores (Top 5): ['Move (4,10): -100000.0', 'Move (8,6): -100000.0'] ...
+Selected Move: (4, 10)
+--- Turn 4 (Player 1) ---
+Immediate Win/Block found: (9, 5)
+--- Turn 6 (Player 1) ---
+Verification Scores (Top 5): ['Move (8,10): -100000.0', 'Move (6,9): -100000.0', 'Move (5,8): -100000.0', 'Move (8,11): -100000.0', 'Move (6,6): -100000.0'] ...
+Selected Move: (9, 6)
+--- Turn 7 (Player 1) ---
+  [Defense] Forced Defense against 3 threats: [(6, 6), (6, 10), (8, 7)]
+Verification Scores (Top 5): ['Move (6,6): -200000.0', 'Move (6,10): -200000.0', 'Move (8,7): -200000.0'] ...
+Selected Move: (6, 6)
+--- Turn 8 (Player 1) ---
+Immediate Win/Block found: (5, 7)

@@ -256,24 +256,71 @@ class AlphaBetaAgent:
         if not candidates: return [(size//2, size//2)]
         
         # Heuristic Sort: Prioritize moves that form shape or block shape
-        # We use a simplified shape scorer for sorting
         scored = []
+        opp = 3 - player
+        
+        # Determine sorting strategy based on game stage
+        # Check immediate threats first
+        threats = []
+        
         for mx, my in candidates:
             # Bias towards center
             bias = 7 - max(abs(mx - 7), abs(my - 7))
             score = bias
-            # Check immediate adjacent
-            # (Too expensive to do full eval here, use simple proximity)
+            
+            # Local Heuristic Score (Attack + Defense)
+            # Check 4 directions for 3s, 4s
+            atk = 0
+            def_score = 0
+            
+            # Temporarily place stone (Virtual)
+            # We don't modify board for speed, just scan lines
+            
+            # ATTACK: Check if we form lines
+            board.board[mx][my] = player
+            atk += self._quick_score(board, mx, my, player)
+            board.board[mx][my] = 0
+            
+            # DEFENSE: Check if we block lines (Opponent forms line if we don't block)
+            board.board[mx][my] = opp
+            def_score += self._quick_score(board, mx, my, opp)
+            board.board[mx][my] = 0
+            
+            # Combine
+            # Defense is slightly more important if lethal
+            if def_score >= SCORE_FIVE: score += SCORE_FIVE * 2
+            elif atk >= SCORE_FIVE: score += SCORE_FIVE
+            elif def_score >= SCORE_LIVE_4: score += SCORE_LIVE_4 * 2
+            elif atk >= SCORE_LIVE_4: score += SCORE_LIVE_4
+            else:
+                score += atk + def_score
+            
             scored.append((score, (mx, my)))
             
         # Sort descending
-        # Actually random shuffle + center bias is okay for shallow
-        # But let's check for kill moves (Winning moves)
-        
         scored.sort(key=lambda x: x[0], reverse=True)
-        # Limit branching factor for speed? 
-        # For Top Level we want all. For deeper, we limit.
-        return [x[1] for x in scored[:20]] # Only check top 20 relevant moves
+        # Check top 25
+        return [x[1] for x in scored[:25]]
+
+    def _quick_score(self, board, x, y, player):
+        # Helper for sorting
+        score = 0
+        dirs = [(1,0), (0,1), (1,1), (1,-1)]
+        size = board.size
+        for dx, dy in dirs:
+            c = 1
+            # Fwd
+            nx, ny = x+dx, y+dy
+            while 0<=nx<size and 0<=ny<size and board.board[nx][ny] == player: c+=1; nx+=dx; ny+=dy
+            # Bwd
+            nx, ny = x-dx, y-dy
+            while 0<=nx<size and 0<=ny<size and board.board[nx][ny] == player: c+=1; nx-=dx; ny-=dy
+            
+            if c >= 5: score += SCORE_FIVE
+            elif c == 4: score += SCORE_LIVE_4 # Simplified, assumes open ends slightly
+            elif c == 3: score += SCORE_LIVE_3
+            elif c == 2: score += 10
+        return score
 
     def evaluate_shape(self, board: Board, player: int) -> float:
         score = 0
@@ -324,16 +371,49 @@ class AlphaBetaAgent:
         
         # Patterns for Player
         p = str(player)
-        score += s.count(p*5) * SCORE_FIVE
-        score += s.count("0"+p*4+"0") * SCORE_LIVE_4
-        score += s.count("0"+p*4+str(opponent)) * SCORE_DEAD_4
-        score += s.count(str(opponent)+p*4+"0") * SCORE_DEAD_4
-        score += s.count("0"+p*3+"0") * SCORE_LIVE_3
-        
-        # Patterns for Opponent (Subtract Score)
         o = str(opponent)
-        score -= s.count(o*5) * SCORE_FIVE * 1.2 # Fear defeat more than victory
-        score -= s.count("0"+o*4+"0") * SCORE_LIVE_4 * 1.2
-        score -= s.count("0"+o*3+"0") * SCORE_LIVE_3 * 1.5 # Block live 3s!
         
+        # 5 (Win)
+        score += s.count(p*5) * SCORE_FIVE
+        
+        # Live 4 (Open ends)
+        score += s.count("0"+p*4+"0") * SCORE_LIVE_4
+        
+        # Dead 4 (One blocked end) - Includes Split 4s which are lethal
+        # 11110, 01111, 10111, 11011, 11101
+        dead_4_count = 0
+        dead_4_count += s.count(o+p*4+"0") + s.count("0"+p*4+o) + s.count(o+p*4+o) # Pure 4 blocked
+        # Split 4s (e.g. 10111 is same as Dead 4 effectively, needs 1 move to win)
+        dead_4_count += s.count(p+"0"+p*3) + s.count(p*3+"0"+p) + s.count(p*2+"0"+p*2)
+        score += dead_4_count * SCORE_DEAD_4
+        
+        # Live 3 (Open ends, becomes Live 4)
+        # 01110
+        # Split 3s: 010110, 011010
+        live_3_count = s.count("0"+p*3+"0")
+        live_3_count += s.count("0"+p+"0"+p*2+"0") + s.count("0"+p*2+"0"+p+"0")
+        score += live_3_count * SCORE_LIVE_3
+        
+        # Opponent Threats (Subtract Score)
+        # We multiply by slightly > 1 to prefer blocking over equal attacking
+        
+        opp_score = 0
+        # Opponent 5
+        opp_score += s.count(o*5) * SCORE_FIVE * 1.2
+        
+        # Opponent Live 4
+        opp_score += s.count("0"+o*4+"0") * SCORE_LIVE_4 * 2.0
+        
+        # Opponent Dead 4 (Split 4s included) -> MUST BLOCK
+        dead_4_opp = 0
+        dead_4_opp += s.count(p+o*4+"0") + s.count("0"+o*4+p) + s.count(p+o*4+p)  # Pure
+        dead_4_opp += s.count(o+"0"+o*3) + s.count(o*3+"0"+o) + s.count(o*2+"0"+o*2) # Split
+        opp_score += dead_4_opp * SCORE_DEAD_4 * 1.5
+        
+        # Opponent Live 3 (Split 3s included) -> Dangerous
+        live_3_opp = s.count("0"+o*3+"0")
+        live_3_opp += s.count("0"+o+"0"+o*2+"0") + s.count("0"+o*2+"0"+o+"0")
+        opp_score += live_3_opp * SCORE_LIVE_3 * 5.0 # PARANOID DEFENSE
+        
+        score -= opp_score
         return score

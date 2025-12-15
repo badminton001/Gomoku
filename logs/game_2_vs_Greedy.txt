@@ -1,0 +1,44 @@
+--- Turn 1 (Player 1) ---
+Verification Scores (Top 5): ['Move (5,9): -0.0', 'Move (6,7): -0.0', 'Move (7,9): -0.0', 'Move (5,8): -0.0', 'Move (8,12): -0.0'] ...
+Selected Move: (5, 9)
+--- Turn 2 (Player 1) ---
+Verification Scores (Top 5): ['Move (5,8): -0.0', 'Move (5,10): -0.0', 'Move (8,8): -0.0', 'Move (9,5): -0.0', 'Move (9,6): -0.0'] ...
+Selected Move: (5, 8)
+--- Turn 3 (Player 1) ---
+Verification Scores (Top 5): ['Move (6,11): -0.0', 'Move (8,8): -0.0', 'Move (6,5): -0.0', 'Move (6,10): -0.0', 'Move (4,11): -0.0'] ...
+Selected Move: (4, 8)
+--- Turn 4 (Player 1) ---
+  [Defense] Forced Defense against 2 threats: [(2, 7), (6, 11)]
+Verification Scores (Top 5): ['Move (2,7): -0.0', 'Move (6,11): -0.0'] ...
+Selected Move: (2, 7)
+--- Turn 5 (Player 1) ---
+Immediate Win/Block found: (7, 12)
+--- Turn 6 (Player 1) ---
+Verification Scores (Top 5): ['Move (3,9): -100000.0', 'Move (2,10): 300000.0', 'Move (4,12): 300000.0', 'Move (3,6): 400000.0', 'Move (10,8): -100000.0'] ...
+Selected Move: (3, 6)
+--- Turn 7 (Player 1) ---
+Verification Scores (Top 5): ['Move (4,5): 50000.0', 'Move (1,8): -100000.0'] ...
+Selected Move: (4, 5)
+--- Turn 8 (Player 1) ---
+Verification Scores (Top 5): ['Move (1,8): 50000.0'] ...
+Selected Move: (1, 8)
+--- Turn 9 (Player 1) ---
+Verification Scores (Top 5): ['Move (11,9): 50000.0', 'Move (4,12): 50000.0', 'Move (6,9): 50000.0', 'Move (8,2): 50000.0', 'Move (5,7): 200000.0'] ...
+Selected Move: (5, 6)
+--- Turn 10 (Player 1) ---
+Verification Scores (Top 5): ['Move (11,9): 450000.0', 'Move (6,7): 550000.0', 'Move (8,12): 450000.0', 'Move (11,7): 450000.0', 'Move (3,4): 450000.0'] ...
+Selected Move: (6, 7)
+--- Turn 11 (Player 1) ---
+Verification Scores (Top 5): ['Move (11,9): 200000.0', 'Move (4,4): 200000.0', 'Move (8,12): 450000.0', 'Move (2,9): 550000.0', 'Move (8,2): 550000.0'] ...
+Selected Move: (7, 8)
+--- Turn 12 (Player 1) ---
+Verification Scores (Top 5): ['Move (8,12): 600000.0', 'Move (11,9): 350000.0', 'Move (8,11): 600000.0', 'Move (7,10): 700000.0', 'Move (8,2): 700000.0'] ...
+Selected Move: (6, 8)
+--- Turn 13 (Player 1) ---
+Verification Scores (Top 5): ['Move (8,2): 850000.0', 'Move (9,7): 850000.0', 'Move (8,12): 850000.0', 'Move (11,9): 850000.0', 'Move (2,9): 850000.0'] ...
+Selected Move: (6, 6)
+--- Turn 14 (Player 1) ---
+Verification Scores (Top 5): ['Move (10,5): 850000.0', 'Move (13,11): 850000.0', 'Move (4,4): 850000.0', 'Move (2,9): 850000.0', 'Move (8,12): 850000.0'] ...
+Selected Move: (6, 5)
+--- Turn 15 (Player 1) ---
+Immediate Win/Block found: (6, 4)

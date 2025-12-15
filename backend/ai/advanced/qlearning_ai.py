@@ -5,9 +5,9 @@ import gymnasium as gym
 from gymnasium import spaces
 from typing import Tuple, Optional, Any, List
 from stable_baselines3 import DQN
-from backend.models.game_engine import GameEngine
-from backend.models.board import Board
-from backend.algorithms.classic_ai import GreedyAgent, RandomAgent
+from backend.engine.game_engine import GameEngine
+from backend.engine.board import Board
+from backend.ai.basic.classic_ai import GreedyAgent, RandomAgent
 
 class GomokuEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
@@ -157,12 +157,12 @@ class QLearningAgent:
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
         if self.model is None:
-            from backend.algorithms.classic_ai import random_move
+            from backend.ai.basic.classic_ai import random_move
             return random_move(board)
         obs = np.array(board.board, dtype=np.float32)
         action, _ = self.model.predict(obs, deterministic=True)
         x, y = divmod(int(action), 15)
         if not board.is_valid_move(x, y):
-            from backend.algorithms.classic_ai import random_move
+            from backend.ai.basic.classic_ai import random_move
             return random_move(board)
         return (x, y)

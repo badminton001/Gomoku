@@ -11,7 +11,7 @@ import copy
 import math
 import random
 from typing import List, Tuple, Optional
-from backend.models.board import Board
+from backend.engine.board import Board
 
 
 def get_neighbor_moves(board: Board, distance: int = 2) -> List[Tuple[int, int]]:
