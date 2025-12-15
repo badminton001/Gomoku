@@ -1,0 +1,6 @@
+# Mark virtual environment and data as vendored (ignored for stats)
+venv/** linguist-vendored
+env/** linguist-vendored
+data/** linguist-vendored
+results/** linguist-vendored
+*.html linguist-detectable=false
