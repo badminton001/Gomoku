@@ -80,31 +80,31 @@ def predict_move(state: BoardState):
         
         # Select Agent
         if state.algorithm.lower() == "greedy":
-            from backend.ai.basic.classic_ai import GreedyAgent
+            from backend.ai.baselines import GreedyAgent
             dist = config.get("greedy", {}).get("distance", 2)
             agent = GreedyAgent(distance=dist)
         elif state.algorithm.lower() == "hybrid":
-            from backend.ai.advanced.hybrid_ai import HybridAgent
+            from backend.ai.hybrid import HybridAgent
             # Try to load best model, fallback to base
-            model_path = "models/sl_model_kaggle.pth"
-            if not os.path.exists(model_path): model_path = "models/sl_model_v1.pth"
+            model_path = "models/sl_policy_v2_kaggle.pth"
+            if not os.path.exists(model_path): model_path = "models/sl_policy_v1_base.pth"
             agent = HybridAgent(model_path=model_path, device="cpu")
         elif state.algorithm.lower() == "dqn":
-            from backend.ai.advanced.qlearning_ai import QLearningAgent
-            model_path = "models/dqn_15x15_final" 
+            from backend.ai.dqn import QLearningAgent
+            model_path = "models/dqn_v1_final" 
             agent = QLearningAgent(model_path=model_path)
         elif state.algorithm.lower() in ["alphabeta", "strong"]:
-             from backend.ai.basic.strong_ai import AlphaBetaAgent
+             from backend.ai.minimax import AlphaBetaAgent
              cfg = config.get("alpha_beta", {})
              depth = cfg.get("depth", 2)
              time_limit = 2.0 # Keep safe limit for API
              agent = AlphaBetaAgent(depth=depth, time_limit=time_limit)
         elif state.algorithm.lower() == "mcts":
-             from backend.ai.advanced.mcts_ai import MCTSAgent
+             from backend.ai.mcts import MCTSAgent
              agent = MCTSAgent(iteration_limit=500)
         else:
              # Default
-             from backend.ai.basic.classic_ai import GreedyAgent
+             from backend.ai.baselines import GreedyAgent
              agent = GreedyAgent()
 
         # Get Move

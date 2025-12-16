@@ -7,13 +7,13 @@ from backend.api.services.move_scorer import MoveScorer
 
 class ReplayService:
     """
-    游戏回放服务 (Person B)
-    - 保存/加载 .json 录像
-    - 调用 AI 对局势进行分析
+    Game Replay Service
+    - Save/Load .json replays
+    - Call AI to analyze game situations
     """
 
     def __init__(self, data_dir="data/games"):
-        # 自动创建存储目录
+        # Automatically create storage directory
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
         self.data_dir = data_dir
@@ -21,7 +21,7 @@ class ReplayService:
         self.scorer = None
 
     def save_replay(self, replay: GameReplay) -> str:
-        """保存回放文件"""
+        """Save replay file"""
         file_path = os.path.join(self.data_dir, f"{replay.game_id}.json")
         with open(file_path, "w", encoding="utf-8") as f:
             # Check Pydantic version compatibility
@@ -32,7 +32,7 @@ class ReplayService:
         return file_path
 
     def load_replay(self, game_id: str) -> Optional[GameReplay]:
-        """加载回放对象"""
+        """Load replay object"""
         file_path = os.path.join(self.data_dir, f"{game_id}.json")
         if not os.path.exists(file_path):
             return None
@@ -42,7 +42,7 @@ class ReplayService:
             return GameReplay(**data)
 
     def list_replays(self) -> List[Dict[str, Any]]:
-        """列出所有保存的回放"""
+        """List all saved replays"""
         files = glob.glob(os.path.join(self.data_dir, "*.json"))
         replays = []
         for fpath in files:
@@ -64,7 +64,7 @@ class ReplayService:
 
     def analyze_replay(self, game_id: str) -> Dict[str, Any]:
         """
-        对指定的回放进行 AI 分析
+        Analyze specified replay with AI
         """
         replay = self.load_replay(game_id)
         if not replay:

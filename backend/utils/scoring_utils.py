@@ -251,7 +251,7 @@ def ensure_directory_exists(directory: str) -> str:
 # Module-level test
 if __name__ == "__main__":
     print("Scoring Utils Test")
-    print("=" * 50)
+
     print("\nAvailable functions:")
     print("  - normalize_score_sigmoid()")
     print("  - validate_move()")

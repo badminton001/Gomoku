@@ -255,13 +255,13 @@ class GomokuGUI:
         agent = None
         # Lazy loading to avoid imports if not needed
         if "Greedy" in name:
-            from backend.ai.basic.classic_ai import GreedyAgent
+            from backend.ai.baselines import GreedyAgent
             agent = GreedyAgent(distance=2)
         elif "AlphaBeta" in name:
-            from backend.ai.basic.strong_ai import AlphaBetaAgent
+            from backend.ai.minimax import AlphaBetaAgent
             agent = AlphaBetaAgent(depth=depth, time_limit=3.0)
         elif "Hybrid" in name:
-             from backend.ai.advanced.hybrid_ai import HybridAgent
+             from backend.ai.hybrid import HybridAgent
              # Try kaggle model first
              model = "models/sl_model_kaggle.pth"
              if not os.path.exists(model): model = "models/sl_model_v1.pth"
@@ -279,7 +279,7 @@ class GomokuGUI:
         
         # Use Hybrid Agent for hints as it's strongest
         try:
-             from backend.ai.advanced.hybrid_ai import HybridAgent
+             from backend.ai.hybrid import HybridAgent
              model = "models/sl_model_kaggle.pth"
              if not os.path.exists(model): model = "models/sl_model_v1.pth"
              agent = HybridAgent(model_path=model)

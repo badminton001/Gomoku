@@ -1,6 +1,6 @@
-"""自对弈引擎核心模块
+"""Self-Play Engine Core Module
 
-负责6个AI算法的自动对战、结果收集和性能指标追踪
+Responsible for automated battles between multiple AI algorithms, result collection, and performance metric tracking.
 """
 import numpy as np
 import time
@@ -15,20 +15,20 @@ from backend.engine.board import Board
 
 @dataclass
 class GameResult:
-    """单局游戏结果"""
-    player1: str          # 先手算法名
-    player2: str          # 后手算法名  
-    winner: str           # 胜者 ('player1', 'player2', 'draw')
-    total_moves: int      # 总步数
-    player1_avg_time: float  # 先手平均每步耗时
-    player2_avg_time: float  # 后手平均每步耗时
-    player1_times: List[float]  # 先手每步耗时列表
-    player2_times: List[float]  # 后手每步耗时列表
-    move_history: List[Tuple[int, int]]  # 着法历史
-    timestamp: str        # 时间戳
+    """Single game result"""
+    player1: str          # Name of first player (Black)
+    player2: str          # Name of second player (White)
+    winner: str           # Winner ('player1', 'player2', 'draw')
+    total_moves: int      # Total moves
+    player1_avg_time: float  # Avg time per move for P1
+    player2_avg_time: float  # Avg time per move for P2
+    player1_times: List[float]  # List of move times for P1
+    player2_times: List[float]  # List of move times for P2
+    move_history: List[Tuple[int, int]]  # Move history
+    timestamp: str        # Timestamp
     
     def to_dict(self) -> Dict:
-        """转换为字典（用于JSON序列化）"""
+        """Convert to dictionary for JSON serialization"""
         return {
             'player1': self.player1,
             'player2': self.player2,
@@ -41,24 +41,24 @@ class GameResult:
 
 
 class SelfPlayEngine:
-    """自对弈引擎
+    """Self-Play Engine
     
-    支持多个AI算法的循环赛评估，收集性能指标
+    Supports round-robin evaluation of multiple AI algorithms and collects performance metrics.
     """
     
     def __init__(self, board_size: int = 15, use_wandb: bool = False):
-        """初始化自对弈引擎
+        """Initialize Self-Play Engine
         
         Args:
-            board_size: 棋盘大小
-            use_wandb: 是否使用Wandb进行实验追踪
+            board_size: Size of the board
+            use_wandb: Whether to use Wandb for experiment tracking
         """
         self.board_size = board_size
         self.use_wandb = use_wandb
         self.ai_algorithms = {}
         self.checkpoint_path = "./data/results/self_play/checkpoint.json"
         
-        # Wandb初始化（可选）
+        # Wandb initialization (optional)
         if use_wandb:
             try:
                 import wandb
@@ -69,31 +69,31 @@ class SelfPlayEngine:
                         "evaluation_type": "round_robin"
                     }
                 )
-                print("✓ Wandb initialized")
+                print("[OK] Wandb initialized")
             except ImportError:
-                print("⚠ Wandb not available, skipping experiment tracking")
+                print("[WARN] Wandb not available, skipping experiment tracking")
                 self.use_wandb = False
     
     def register_ai(self, name: str, ai_instance):
-        """注册AI算法
+        """Register AI algorithm
         
         Args:
-            name: 算法名称
-            ai_instance: AI实例，需要有get_move(board, player)方法
+            name: Algorithm name
+            ai_instance: AI instance, must have get_move(board, player) method
         """
         self.ai_algorithms[name] = ai_instance
-        print(f"✓ Registered AI: {name}")
+        print(f"[OK] Registered AI: {name}")
     
     def play_single_match(self, ai1_name: str, ai2_name: str, verbose: bool = False) -> GameResult:
-        """单场对战
+        """Play a single match
         
         Args:
-            ai1_name: 先手AI名称
-            ai2_name: 后手AI名称
-            verbose: 是否打印详细信息（包括每步棋）
+            ai1_name: Name of first player (Black)
+            ai2_name: Name of second player (White)
+            verbose: Whether to print detailed info (including every move)
             
         Returns:
-            GameResult对象
+            GameResult object
         """
         board = Board(self.board_size)
         ai1 = self.ai_algorithms[ai1_name]
@@ -103,26 +103,26 @@ class SelfPlayEngine:
         player1_times = []
         player2_times = []
         
-        current_player = 1  # 1 = ai1 (黑), 2 = ai2 (白)
+        current_player = 1  # 1 = ai1 (Black), 2 = ai2 (White)
         move_count = 0
         max_moves = self.board_size * self.board_size
         winner = 'draw'
         
         if verbose:
             print(f"\n   {'='*50}")
-            print(f"   Match: {ai1_name} (⚫) vs {ai2_name} (⚪)")
+            print(f"   Match: {ai1_name} (X) vs {ai2_name} (O)")
             print(f"   {'='*50}")
         
         while move_count < max_moves:
-            # 选择当前AI
+            # Select current AI
             current_ai = ai1 if current_player == 1 else ai2
             current_name = ai1_name if current_player == 1 else ai2_name
-            player_symbol = "⚫" if current_player == 1 else "⚪"
+            player_symbol = "X" if current_player == 1 else "O"
             
             if verbose:
                 print(f"\n   Move {move_count + 1}: {current_name} {player_symbol} thinking...", end="", flush=True)
             
-            # 计时下棋 - 允许多次重试非法走法
+            # Move with timing and retry logic
             max_retries = 3
             move = None
             retry_count = 0
@@ -133,25 +133,25 @@ class SelfPlayEngine:
                     move = current_ai.get_move(board, current_player)
                 except KeyboardInterrupt:
                     if verbose:
-                        print(f"\n⚠️  Match interrupted by user (Ctrl+C)")
+                        print(f"\n[WARN] Match interrupted by user (Ctrl+C)")
                     raise  # Re-raise to stop the tournament
                 except Exception as e:
                     if verbose:
                         print(f" ERROR: {e}")
                         import traceback
-                        print("\n❌ Exception traceback:")
+                        print("\n[ERROR] Exception traceback:")
                         traceback.print_exc()
                     winner = 'player2' if current_player == 1 else 'player1'
                     break
                 
-                if move is None:  # 无合法走法
+                if move is None:  # No valid move
                     continue
                 
                 x, y = move
                 
-                # 验证走法合法性
+                # Check validity
                 if board.is_valid_move(x, y):
-                    # 走法有效，跳出重试循环
+                    # Valid move
                     break
                 else:
                     if verbose:
@@ -160,9 +160,9 @@ class SelfPlayEngine:
             
             elapsed = time.time() - start_time
             
-            # 所有重试都失败，尝试随机选择一个合法走法
+            # If all retries failed, try random valid move
             if move is None:
-                from backend.ai.advanced.mcts_ai import get_neighbor_moves
+                from backend.ai.mcts import get_neighbor_moves
                 candidates = get_neighbor_moves(board, distance=2)
                 valid_candidates = [m for m in candidates if board.is_valid_move(m[0], m[1])]
                 
@@ -173,7 +173,7 @@ class SelfPlayEngine:
                     if verbose:
                         print(f" - Auto-selected valid move: ({x}, {y})")
                 else:
-                    # 完全没有合法走法，判负
+                    # No valid moves at all, loss
                     if verbose:
                         print(f" - No valid moves available")
                     winner = 'player2' if current_player == 1 else 'player1'
@@ -181,39 +181,39 @@ class SelfPlayEngine:
             
             move_history.append((x, y))
             
-            # 记录时间
+            # Record time
             if current_player == 1:
                 player1_times.append(elapsed)
             else:
                 player2_times.append(elapsed)
             
-            # 执行走法
+            # Make move
             board.place_stone(x, y, current_player)
             
             if verbose:
                 print(f" ({x},{y}) [{elapsed:.2f}s]")
             
-            # 检查胜负
+            # Check result
             result = board.get_game_result()
             if result == current_player:
                 winner = 'player1' if current_player == 1 else 'player2'
                 if verbose:
-                    print(f"\n   🎉 {current_name} WINS!")
+                    print(f"\n   [WIN] {current_name} WINS!")
                 break
-            elif result == -1:  # 平局
+            elif result == -1:  # Draw
                 winner = 'draw'
                 if verbose:
-                    print(f"\n   🤝 DRAW!")
+                    print(f"\n   [DRAW] DRAW!")
                 break
             
-            # 切换玩家
+            # Switch player
             current_player = 3 - current_player
             move_count += 1
         
         if verbose:
             print(f"   {'='*50}\n")
         
-        # 计算平均时间
+        # Calculate average time
         avg_time_p1 = np.mean(player1_times) if player1_times else 0.0
         avg_time_p2 = np.mean(player2_times) if player2_times else 0.0
         
@@ -231,15 +231,15 @@ class SelfPlayEngine:
         )
     
     def run_round_robin(self, num_games_per_pair: int = 10, verbose: bool = True, resume: bool = False) -> List[GameResult]:
-        """循环赛：每对AI互相对战多次
+        """Round Robin Tournament
         
         Args:
-            num_games_per_pair: 每对AI对战的场数
-            verbose: 是否打印进度信息
-            resume: 是否从断点继续
+            num_games_per_pair: Number of games per pair
+            verbose: Whether to print progress
+            resume: Whether to resume from checkpoint
             
         Returns:
-            所有对局结果列表
+            List of all game results
         """
         ai_names = sorted(list(self.ai_algorithms.keys()))
         all_results = []
@@ -248,7 +248,7 @@ class SelfPlayEngine:
         completed = 0
         start_i, start_j, start_game = 0, 0, 0
         
-        # 断点续传
+        # Resume
         if resume:
             checkpoint = self.load_checkpoint()
             if checkpoint:
@@ -258,11 +258,11 @@ class SelfPlayEngine:
                 start_game = checkpoint['current_game']
                 completed = len(all_results)
                 if verbose:
-                    print(f"\n🔄 Resuming from checkpoint...")
+                    print(f"\n[INFO] Resuming from checkpoint...")
                     print(f"   Already completed: {completed}/{total_matches} games")
         
         if verbose and not resume:
-            print(f"\n🎮 Starting Round Robin Tournament")
+            print(f"\n[START] Starting Round Robin Tournament")
             print(f"   Algorithms: {len(ai_names)}")
             print(f"   Total matches: {total_matches}\n")
         
@@ -271,12 +271,12 @@ class SelfPlayEngine:
                 continue
             for j, ai2_name in enumerate(ai_names):
                 if i == j:
-                    continue  # 不自己和自己对战
+                    continue  # Self-play excluded
                 if i == start_i and j < start_j:
                     continue
                 
                 if verbose:
-                    print(f"⚔️  {ai1_name} vs {ai2_name}")
+                    print(f"[MATCH] {ai1_name} vs {ai2_name}")
                 
                 game_start = start_game if (i == start_i and j == start_j) else 0
                 for game_num in range(game_start, num_games_per_pair):
@@ -284,11 +284,11 @@ class SelfPlayEngine:
                     all_results.append(result)
                     completed += 1
                     
-                    # 每10场保存一次checkpoint
+                    # Save checkpoint every 10 games
                     if completed % 10 == 0:
                         self.save_checkpoint(all_results, i, j, game_num + 1)
                     
-                    # Wandb日志
+                    # Wandb log
                     if self.use_wandb:
                         try:
                             import wandb
@@ -310,22 +310,22 @@ class SelfPlayEngine:
                     print(f"   Progress: {completed}/{total_matches} ({100*completed/total_matches:.1f}%)\n")
         
         if verbose:
-            print(f"✅ Tournament completed! Total games: {len(all_results)}")
+            print(f"[OK] Tournament completed! Total games: {len(all_results)}")
         
-        # 清除checkpoint
+        # Clear checkpoint
         self.clear_checkpoint()
         
         return all_results
     
     def save_results(self, results: List[GameResult], output_dir: str = './data/results/self_play'):
-        """保存结果
+        """Save results
         
         Args:
-            results: 对局结果列表
-            output_dir: 输出目录
+            results: List of game results
+            output_dir: Output directory
             
         Returns:
-            (详细结果路径, 汇总CSV路径)
+            (Detailed JSON path, Aggregated CSV path)
         """
         import os
         import pandas as pd
@@ -333,24 +333,24 @@ class SelfPlayEngine:
         os.makedirs(f"{output_dir}/matches", exist_ok=True)
         os.makedirs(f"{output_dir}/aggregated", exist_ok=True)
         
-        # 保存每局详细结果（JSON）
+        # Save detailed results (JSON)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         detailed_path = f"{output_dir}/matches/results_{timestamp}.json"
         
         with open(detailed_path, 'w', encoding='utf-8') as f:
             json.dump([r.to_dict() for r in results], f, indent=2, ensure_ascii=False)
         
-        print(f"✓ Saved detailed results to {detailed_path}")
+        print(f"[OK] Saved detailed results to {detailed_path}")
         
-        # 保存汇总CSV
+        # Save aggregated CSV
         df = pd.DataFrame([r.to_dict() for r in results])
         csv_path = f"{output_dir}/aggregated/results_{timestamp}.csv"
         df.to_csv(csv_path, index=False, encoding='utf-8-sig')
         
-        print(f"✓ Saved aggregated results to {csv_path}")
+        print(f"[OK] Saved aggregated results to {csv_path}")
         
-        # 打印基础统计
-        print(f"\n📊 Quick Statistics:")
+        # Print basic stats
+        print(f"\n[INFO] Quick Statistics:")
         print(f"   Total games: {len(results)}")
         print(f"   Average moves per game: {df['total_moves'].mean():.1f}")
         print(f"   Average time per move: {(df['player1_avg_time'] + df['player2_avg_time']).mean() / 2:.3f}s")
@@ -358,13 +358,13 @@ class SelfPlayEngine:
         return detailed_path, csv_path
     
     def save_checkpoint(self, results: List[GameResult], current_i: int, current_j: int, current_game: int):
-        """保存断点
+        """Save Checkpoint
         
         Args:
-            results: 当前所有结果
-            current_i: 当前外层循环索引
-            current_j: 当前内层循环索引
-            current_game: 当前游戏编号
+            results: Current results
+            current_i: Outer loop index
+            current_j: Inner loop index
+            current_game: Current game number
         """
         import os
         checkpoint = {
@@ -380,10 +380,10 @@ class SelfPlayEngine:
             json.dump(checkpoint, f, indent=2)
     
     def load_checkpoint(self) -> Optional[Dict]:
-        """加载断点
+        """Load Checkpoint
         
         Returns:
-            断点数据或None
+            Checkpoint data or None
         """
         if not Path(self.checkpoint_path).exists():
             return None
@@ -392,7 +392,7 @@ class SelfPlayEngine:
             with open(self.checkpoint_path, 'r', encoding='utf-8') as f:
                 checkpoint_data = json.load(f)
             
-            # 重建GameResult对象
+            # Reconstruct GameResult objects
             results = []
             for r_dict in checkpoint_data['results']:
                 results.append(GameResult(
@@ -415,20 +415,20 @@ class SelfPlayEngine:
                 'current_game': checkpoint_data['current_game']
             }
         except Exception as e:
-            print(f"⚠ Failed to load checkpoint: {e}")
+            print(f"[WARN] Failed to load checkpoint: {e}")
             return None
     
     def clear_checkpoint(self):
-        """清除断点文件"""
+        """Clear Checkpoint File"""
         if Path(self.checkpoint_path).exists():
             Path(self.checkpoint_path).unlink()
     
     def cleanup(self):
-        """清理资源"""
+        """Cleanup Resources"""
         if self.use_wandb:
             try:
                 import wandb
                 wandb.finish()
-                print("✓ Wandb session finished")
+                print("[OK] Wandb session finished")
             except:
                 pass
