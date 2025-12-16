@@ -35,6 +35,10 @@ class AlphaBetaAgent:
         self.start_time = time.time()
         self.nodes_explored = 0
         
+        # Clone board to prevent side-effects on the live game state
+        import copy
+        search_board = copy.deepcopy(board)
+        
         if board.move_count == 0:
             return (board.size // 2, board.size // 2)
 
@@ -43,13 +47,14 @@ class AlphaBetaAgent:
         
         try:
             # Depth 2 (Fast)
-            val, move = self.alpha_beta_search(board, player, depth=2, alpha=-math.inf, beta=math.inf)
+            val, move = self.alpha_beta_search(search_board, player, depth=2, alpha=-math.inf, beta=math.inf)
             best_move = move
             if val >= SCORE_FIVE: return best_move
             
             # Depth 4 (Normal)
             if time.time() - self.start_time < self.time_limit * 0.3:
-                 val, move = self.alpha_beta_search(board, player, depth=4, alpha=-math.inf, beta=math.inf)
+                 # Use search_board here too!
+                 val, move = self.alpha_beta_search(search_board, player, depth=4, alpha=-math.inf, beta=math.inf)
                  best_move = move
                  
         except TimeoutError:
@@ -153,8 +158,14 @@ class AlphaBetaAgent:
             for y in range(size):
                 if board.board[x][y] == 0:
                      # Check Self Win
+                     # Check Self Win
                      board.board[x][y] = player
-                     if board._check_five(x, y, player):
+                     is_win = False
+                     for dx, dy in [(1,0), (0,1), (1,1), (1,-1)]:
+                         if board._max_run_len(x, y, dx, dy, player) >= 5:
+                             is_win = True
+                             break
+                     if is_win:
                          board.board[x][y] = 0
                          return [(x, y)]
                      board.board[x][y] = 0
@@ -162,7 +173,12 @@ class AlphaBetaAgent:
                      # Check Opponent Win
                      opponent = 3 - player
                      board.board[x][y] = opponent
-                     if board._check_five(x, y, opponent):
+                     is_win_opp = False
+                     for dx, dy in [(1,0), (0,1), (1,1), (1,-1)]:
+                         if board._max_run_len(x, y, dx, dy, opponent) >= 5:
+                             is_win_opp = True
+                             break
+                     if is_win_opp:
                          board.board[x][y] = 0
                          return [(x, y)]
                      board.board[x][y] = 0
