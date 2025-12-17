@@ -1,64 +1,49 @@
-"""
-AI Recommender UI Helper.
-
-Handles the rendering of AI move suggestions (hints/Top-5) on the game board.
-"""
+import tkinter as tk
 
 class AiRecommender:
-    def __init__(self, canvas, cell_size):
+    def __init__(self, canvas: tk.Canvas, cell_size: int):
         self.canvas = canvas
         self.cell_size = cell_size
-        self.hint_tag = "ai_hint_marker"
-
-    def show_hint(self, x, y):
-        """Show a single move hint (Red box)."""
-        self.clear_hint()
-        margin = self.cell_size
-        cx = margin + x * self.cell_size
-        cy = margin + y * self.cell_size
-        r = self.cell_size * 0.45
-        self.canvas.create_rectangle(
-            cx - r, cy - r, cx + r, cy + r,
-            outline="red", width=3, tags=self.hint_tag
-        )
-
-    def show_top5(self, moves):
-        """
-        Show Top-5 recommended moves with rank indicators.
-        Colors: 1=Red, 2-3=Orange, 4-5=Gray.
-        """
-        self.clear_hint()
-        colors = ["#FF0000", "#FF8C00", "#FF8C00", "#808080", "#808080"]
-
-        for i, (x, y) in enumerate(moves):
-            rank = i + 1
-            color = colors[i] if i < len(colors) else "gray"
-
-            margin = self.cell_size
-            cx = margin + x * self.cell_size
-            cy = margin + y * self.cell_size
-            r = self.cell_size * 0.4
-
-            # 1. Circle Background
-            self.canvas.create_oval(
-                cx - r, cy - r, cx + r, cy + r,
-                fill=None, outline=color, width=3, tags=self.hint_tag
-            )
-
-            # 2. Rank Number
-            self.canvas.create_text(
-                cx, cy, text=str(rank), fill=color,
-                font=("Arial", 16, "bold"), tags=self.hint_tag
-            )
-
-            # 3. Emphasis for Rank 1
-            if rank == 1:
-                r2 = r + 4
-                self.canvas.create_rectangle(
-                    cx - r2, cy - r2, cx + r2, cy + r2,
-                    outline="red", width=3, tags=self.hint_tag
-                )
+        self.padding = 20 # Hardcoded matching BoardUI
 
     def clear_hint(self):
-        """Clear all hint markers."""
-        self.canvas.delete(self.hint_tag)
+        self.canvas.delete("hint")
+
+    def show_hint(self, x, y):
+        """Show a single best move hint (Blue circle)"""
+        self.clear_hint()
+        cx = self.padding + x * self.cell_size
+        cy = self.padding + y * self.cell_size
+        
+        # Draw animated-like blue circle
+        self.canvas.create_oval(cx-15, cy-15, cx+15, cy+15, outline="#007BFF", width=3, tags="hint")
+        self.canvas.create_oval(cx-18, cy-18, cx+18, cy+18, outline="#007BFF", width=1, dash=(2,2), tags="hint")
+
+    def show_top5(self, candidates):
+        """
+        Visualize Top 5 moves with Rank coloring.
+        candidates: List of (score, (x, y)) tuples, sorted best to worst.
+        """
+        self.clear_hint()
+        
+        # Colors for Ranks: 1=Red, 2-3=Orange, 4-5=Gray
+        colors = ["red", "orange", "orange", "gray", "gray"]
+        
+        for i, (score, move) in enumerate(candidates):
+            if i >= 5: break
+            x, y = move
+            cx = self.padding + x * self.cell_size
+            cy = self.padding + y * self.cell_size
+            
+            color = colors[i]
+            rank = i + 1
+            
+            # Special styling for Rank 1 (Best Move): Square box + Double thickness
+            if i == 0:
+                self.canvas.create_rectangle(cx-18, cy-18, cx+18, cy+18, outline=color, width=2, tags="hint")
+            
+            # Draw marker (Circle)
+            self.canvas.create_oval(cx-14, cy-14, cx+14, cy+14, outline=color, width=2, tags="hint")
+            
+            # Rank Number (Centered)
+            self.canvas.create_text(cx, cy, text=str(rank), fill=color, font=("Arial", 10, "bold"), tags="hint")

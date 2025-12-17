@@ -26,11 +26,19 @@ class DifficultyControlUI(tk.Frame):
                        bg="#f0f0f0", command=self.notify_change).pack(anchor="w")
         # ---------------------------------------------------------------
 
-        # --- Difficulty Selection ---
-        diff_frame = tk.LabelFrame(self, text="AI Difficulty", padx=10, pady=10, bg="#f0f0f0")
+        # --- Algorithm Selection ---
+        diff_frame = tk.LabelFrame(self, text="AI Strategy", padx=10, pady=10, bg="#f0f0f0")
         diff_frame.pack(fill="x", pady=10)
-        self.diff_var = tk.StringVar(value="medium")  # default medium
-        modes = [("Easy", "easy"), ("Medium", "medium"), ("Hard", "hard")]
+        self.diff_var = tk.StringVar(value="medium")  # default
+        
+        # Algorithm-focused labels (No difficulty prefixes)
+        modes = [
+            ("Greedy Algorithm (Fast)", "easy"),
+            ("Minimax Strategy (Depth 2)", "medium"),
+            ("AlphaBeta Search (Depth 3)", "hard"),
+            ("Hybrid Agent (Neural Net)", "expert")
+        ]
+        
         for text, val in modes:
             tk.Radiobutton(diff_frame, text=text, variable=self.diff_var, value=val,
                            bg="#f0f0f0", command=self.notify_change).pack(anchor="w")
