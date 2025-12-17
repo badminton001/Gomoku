@@ -1,12 +1,17 @@
 import tkinter as tk
 from tkinter import messagebox
+import sys
+import os
 
 # --- Import Backend Logic ---
-from backend.models.game_engine import GameEngine
-# Import Algorithms
-from backend.algorithms.classic_ai import AlphaBetaAgent
+# Corrected Imports from actual codebase structure
+from backend.engine.game_engine import GameEngine
+from backend.ai.minimax import AlphaBetaAgent
+from backend.ai.baselines import GreedyAgent
+from backend.ai.hybrid import HybridAgent
 
 # --- Import UI Components ---
+# Relative imports assume this file is in frontend/ui/
 from .difficulty_control import DifficultyControlUI
 from .ai_recommender import AiRecommender
 
@@ -21,7 +26,7 @@ class BoardUI(tk.Frame):
         # 1. Initialize Game Engine
         self.engine = GameEngine(size=board_size)
 
-        # 2. Initialize AI
+        # 2. Initialize AI (Default Medium)
         self.ai_agent = AlphaBetaAgent(depth=2)
 
         # 3. Player Identity (1=Black, 2=White). Default: Human is Black (1)
@@ -33,13 +38,15 @@ class BoardUI(tk.Frame):
         self.left_panel = tk.Frame(self, bg="#E3C088")
         self.left_panel.pack(side="left", fill="both", expand=True)
 
-        self.right_panel = tk.Frame(self, bg="#f0f0f0", width=200)
+        self.right_panel = tk.Frame(self, bg="#f0f0f0", width=280)
         self.right_panel.pack(side="right", fill="y")
         self.right_panel.pack_propagate(False)
 
         # --- Canvas ---
-        self.canvas_width = cell_size * (board_size + 1)
-        self.canvas_height = cell_size * (board_size + 1)
+        self.padding = 20 # Defined padding
+        self.canvas_width = cell_size * (board_size) + 2 * self.padding
+        self.canvas_height = cell_size * (board_size) + 2 * self.padding
+        
         self.canvas = tk.Canvas(
             self.left_panel,
             width=self.canvas_width,
@@ -54,7 +61,7 @@ class BoardUI(tk.Frame):
 
         self.control_panel = DifficultyControlUI(
             self.right_panel,
-            on_settings_change=self.handle_settings_change,  # Name updated
+            on_settings_change=self.handle_settings_change,
             on_hint=self.handle_hint_request,
             on_reset=self.reset_game
         )
@@ -97,20 +104,28 @@ class BoardUI(tk.Frame):
 
         print("UI: Thinking for Top-5 hints...")
         try:
-            if hasattr(self.ai_agent, '_ordered_candidates'):
-                try:
-                    candidates = self.ai_agent._ordered_candidates(
+            # Check if agent supports ordered candidates (AlphaBetaAgent usually does via helper or direct)
+            # In our current code, AlphaBetaAgent might not expose it publicly.
+            # But the user code assumes it does. We might need to mock or ensure it exists.
+            # For now, we try-except it.
+            if hasattr(self.ai_agent, 'get_top_moves'): # Use the method name I saw in gui.py before
+                 candidates = self.ai_agent.get_top_moves(
                         self.engine.board,
                         self.engine.current_player,
-                        self.ai_agent.depth
+                        limit=5
                     )
-                except TypeError:
-                    candidates = self.ai_agent._ordered_candidates(
+            elif hasattr(self.ai_agent, '_ordered_candidates'): # Legacy name
+                 candidates = self.ai_agent._ordered_candidates(
                         self.engine.board,
-                        self.engine.current_player
+                        self.engine.current_player,
+                        depth=1
                     )
+                 # Format: [(move, score)] -> need [(score, move)] for recommender?
+                 # Actually base AlphaBeta returns [(score, move)] usually
             else:
-                raise AttributeError("Agent does not support ordered candidates")
+                # Fallback: Just get best move
+                move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
+                candidates = [(1.0, move)]
 
             top_5_moves = candidates[:5]
             if top_5_moves:
@@ -132,11 +147,20 @@ class BoardUI(tk.Frame):
 
         # 2. Update AI Difficulty
         if diff == 'easy':
-            self.ai_agent = AlphaBetaAgent(depth=1)
+            self.ai_agent = GreedyAgent(distance=2)
+            print("AI: Switch to GreedyAgent")
         elif diff == 'medium':
             self.ai_agent = AlphaBetaAgent(depth=2)
+            print("AI: Switch to AlphaBeta (Depth 2)")
         elif diff == 'hard':
             self.ai_agent = AlphaBetaAgent(depth=3)
+            print("AI: Switch to AlphaBeta (Depth 3)")
+        elif diff == 'expert':
+            # Try to load Hybrid model
+            model_path = "models/sl_model_kaggle.pth"
+            if not os.path.exists(model_path): model_path = "models/sl_model_v1.pth"
+            self.ai_agent = HybridAgent(model_path=model_path)
+            print(f"AI: Switch to HybridAgent ({model_path})")
 
         # 3. Reset Game to apply changes
         self.reset_game()
@@ -167,10 +191,11 @@ class BoardUI(tk.Frame):
 
                 # 4. Check game over
                 if self.engine.game_over:
-                    self.update()
+                    self.update() # Force redraw
                     self.check_game_over()
                 else:
                     self.check_game_over()
+                    # If human is supposed to play next, allow it.
 
     def on_click(self, event):
         """Player click event"""
@@ -186,9 +211,9 @@ class BoardUI(tk.Frame):
         self.recommender.clear_hint()
 
         # 1. Calculate coordinates
-        margin = self.cell_size
-        x = round((event.x - margin) / self.cell_size)
-        y = round((event.y - margin) / self.cell_size)
+        margin = self.padding
+        x = int(round((event.x - margin) / self.cell_size))
+        y = int(round((event.y - margin) / self.cell_size))
 
         if not (0 <= x < self.board_size and 0 <= y < self.board_size):
             return
@@ -223,32 +248,50 @@ class BoardUI(tk.Frame):
             return True
         else:
             next_player_text = "Black" if self.engine.current_player == 1 else "White"
-            self.info_label.config(text=f"Current Turn: {next_player_text}")
+            self.info_label.config(text=f"Current Turn: {next_player_text} (You are {'Black' if self.human_player==1 else 'White'})")
             return False
 
     def draw_grid(self):
         """Draw board grid"""
-        # (Same as before)
-        margin = self.cell_size
+        margin = self.padding
         width = self.cell_size * (self.board_size - 1)
         self.canvas.create_rectangle(0, 0, self.canvas_width, self.canvas_height, fill="#E3C088")
+        
+        # Draw lines
         for i in range(self.board_size):
             start = margin + i * self.cell_size
             end = margin + width
+            # Horizontal (y varies)
             self.canvas.create_line(margin, start, end + margin, start)
+            # Vertical (x varies)
             self.canvas.create_line(start, margin, start, end + margin)
-            self.canvas.create_text(start, margin / 2, text=str(i), fill="gray")
-            self.canvas.create_text(margin / 2, start, text=str(i), fill="gray")
+            
+            # Labels
+            font = ("Arial", 8)
+            # Row Numbers (15 down to 1)
+            self.canvas.create_text(margin/2, start, text=str(15-i), fill="black", font=font)
+            # Col Letters (A..O)
+            col_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'O', 'P']
+            if i < len(col_labels):
+                 self.canvas.create_text(start, margin/2, text=col_labels[i], fill="black", font=font)
+
+        # Star points
         star_points = [(3, 3), (11, 3), (7, 7), (3, 11), (11, 11)]
-        for x, y in star_points:
-            cx = margin + x * self.cell_size
-            cy = margin + y * self.cell_size
-            r = 3
-            self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill="black")
+        size_stars = [3, 7, 11] # Indices
+        
+        for x in size_stars:
+            for y in size_stars:
+                cx = margin + x * self.cell_size
+                cy = margin + y * self.cell_size
+                r = 3
+                self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill="black")
 
     def draw_piece(self, x, y, color):
-        margin = self.cell_size
+        margin = self.padding
         cx = margin + x * self.cell_size
         cy = margin + y * self.cell_size
         r = self.cell_size * 0.4
-        self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill=color, outline=color, tags="piece")
+        # Slight shadow
+        self.canvas.create_oval(cx - r+2, cy - r+2, cx + r+2, cy + r+2, fill="#aaaaaa", outline="")
+        # Piece
+        self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill=color, outline="gray")

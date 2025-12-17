@@ -249,3 +249,32 @@ class AlphaBetaAgent:
         if (p+o*4+"0" in s) or ("0"+o*4+p in s): score -= SCORE_DEAD_4 * 1.2
         
         return score
+
+    def get_top_moves(self, board: Board, player: int, limit: int = 5) -> List[Tuple[float, Tuple[int, int]]]:
+        """
+        Return the top N moves with their scores for UI visualization.
+        Format: [(score, (x, y)), ...] sorted descending.
+        """
+        # 1. Get promising candidates
+        candidates = self.get_sorted_moves(board, player)
+        scored_moves = []
+        
+        # 2. Score each candidate (Shallow Evaluation)
+        # using depth=0 evaluation for speed, or depth=1 for better accuracy
+        for move in candidates[:20]: # Only evaluate top 20 to save time
+            mx, my = move
+            # Try move
+            board.place_stone(mx, my, player)
+            
+            # Evaluate
+            score = self.evaluate_board(board, player)
+            
+            # Undo
+            board.board[mx][my] = 0
+            
+            scored_moves.append((score, move))
+            
+        # 3. Sort by score
+        scored_moves.sort(key=lambda x: x[0], reverse=True)
+        
+        return scored_moves[:limit]
