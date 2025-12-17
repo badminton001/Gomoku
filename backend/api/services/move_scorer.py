@@ -58,18 +58,15 @@ class MoveScorer:
         
         logger.info("Initializing AI agents...")
         
-        # Initialize 4 classical algorithms
+        # Initialize 3 classical algorithms
         self.greedy_agent = GreedyAgent(distance=GREEDY_DISTANCE)
         
-        # Minimax (using AlphaBeta with depth 2)
-        self.minimax_agent = AlphaBetaAgent(depth=2, time_limit=0.3)
-        
-        # AlphaBeta (using AlphaBeta with deeper search)
+        # AlphaBeta search
         self.alphabeta_agent = AlphaBetaAgent(
             depth=ALPHABETA_DEPTH, time_limit=0.5 
         )
         
-        logger.info("[OK] Classic AI agents initialized (Greedy, Minimax, AlphaBeta)")
+        logger.info("[OK] Classic AI agents initialized (Greedy, AlphaBeta)")
 
         self.enable_mcts = enable_mcts and MCTS_AVAILABLE
         if self.enable_mcts:
@@ -81,36 +78,29 @@ class MoveScorer:
     # Removed _get_policy_score - using 4 classical algorithms instead
 
     def _evaluate_position(self, board: Board, player: int) -> Dict[str, float]:
-        """Evaluate position using 4 classical AI algorithms."""
+        """Evaluate position using 3 classical AI algorithms."""
         scores = {}
         
         try:
             # 1. Greedy - fast heuristic
             scores['greedy'] = self.greedy_agent.evaluate_board(board, player)
         except Exception as e:
-            logger.error(f"Greedy error: {e}")
+            logger.error(f"[ERROR] Greedy evaluation failed: {e}")
             scores['greedy'] = 0.5
         
         try:
-            # 2. Minimax -  shallow search
-            scores['minimax'] = self.minimax_agent.evaluate_board(board, player)
-        except Exception as e:
-            logger.error(f"Minimax error: {e}")
-            scores['minimax'] = 0.5
-        
-        try:
-            # 3. Alpha-Beta - deep search with pruning
+            # 2. Alpha-Beta - search with pruning
             scores['alphabeta'] = self.alphabeta_agent.evaluate_board(board, player)
         except Exception as e:
-            logger.error(f"Alpha-Beta error: {e}")
+            logger.error(f"[ERROR] Alpha-Beta evaluation failed: {e}")
             scores['alphabeta'] = 0.5
         
-        # 4. MCTS - Monte Carlo simulation (optional)
         if self.enable_mcts and self.mcts_agent:
             try:
+                # 3. MCTS - Monte Carlo Tree Search
                 scores['mcts'] = self.mcts_agent.evaluate_board(board, player)
             except Exception as e:
-                logger.error(f"MCTS error: {e}", exc_info=True)
+                logger.error(f"[ERROR] MCTS evaluation failed: {e}")
                 scores['mcts'] = 0.5
         
         return scores
@@ -122,15 +112,16 @@ class MoveScorer:
         
         # ... (validation skipped for brevity, assumed safe via wrapper)
         
-        board = Board(size=BOARD_SIZE)
-        
-        # Initialize score lists for 4 algorithms
-        all_scores = {'greedy': [], 'minimax': [], 'alphabeta': []}
+        board = Board(size=15)
+        all_scores = {
+            'greedy': [],
+            'alphabeta': []
+        }
         if self.enable_mcts:
             all_scores['mcts'] = []
         critical_moments = []
         
-        algo_names = "Greedy, Minimax, Alpha-Beta" + (", MCTS" if self.enable_mcts else "")
+        algo_names = "Greedy, Alpha-Beta" + (", MCTS" if self.enable_mcts else "")
         logger.info(f"[ANALYZE] Analyzing game_id={game_id}, moves={len(moves)}, algos=[{algo_names}]")
         
         move_iterator = enumerate(moves) if not TQDM_AVAILABLE else tqdm(
