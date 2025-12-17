@@ -65,7 +65,7 @@ def test_basic_scoring():
     stats = result['stats_summary']
     
     # Validate DataFrame structure
-    required_columns = ['step', 'player', 'x', 'y', 'greedy_score', 'policy_score',
+    required_columns = ['step', 'player', 'x', 'y', 'greedy_score', 'minimax_score',
                        'alphabeta_score', 'avg_score', 'score_variance', 'move_type']
     for col in required_columns:
         assert col in df.columns, f"Missing column: {col}"
@@ -79,7 +79,7 @@ def test_basic_scoring():
         print(f"   {key}: {value}")
     
     # Validate score ranges
-    for col in ['greedy_score', 'alphabeta_score', 'avg_score']:
+    for col in ['greedy_score', 'minimax_score', 'alphabeta_score', 'avg_score']:
         assert df[col].min() >= 0, f"{col} has values < 0"
         assert df[col].max() <= 1, f"{col} has values > 1"
     
@@ -87,7 +87,7 @@ def test_basic_scoring():
     
     # Show sample moves
     print(f"\n[INFO] Sample Move Analysis (first 5 moves):")
-    print(df[['step', 'player', 'policy_score', 'greedy_score', 'alphabeta_score', 
+    print(df[['step', 'player', 'greedy_score', 'minimax_score', 'alphabeta_score', 
              'avg_score', 'move_type']].head().to_string())
     
     # Check files were created
@@ -167,7 +167,7 @@ def main():
         
         # Test 2: MCTS scoring (commented out by default due to slowness)
         # Uncomment to test MCTS:
-        # test_with_mcts()
+        test_with_mcts()
         
         # Test 3: Critical move detection
         test_critical_move_detection()

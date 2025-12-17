@@ -57,98 +57,60 @@ class MoveScorer:
         self._cache_hits = self._cache_misses = 0
         
         logger.info("Initializing AI agents...")
+        
+        # Initialize 4 classical algorithms
         self.greedy_agent = GreedyAgent(distance=GREEDY_DISTANCE)
+        
+        # Minimax (using AlphaBeta with depth 2)
+        self.minimax_agent = AlphaBetaAgent(depth=2, time_limit=0.3)
+        
+        # AlphaBeta (using AlphaBeta with deeper search)
         self.alphabeta_agent = AlphaBetaAgent(
             depth=ALPHABETA_DEPTH, time_limit=0.5 
         )
-        logger.info("[OK] Classic AI agents initialized")
         
-        # Load SL Policy Model (Intuition)
-        self.device = "cpu"
-        self.policy_net = None
-        try:
-            from backend.ai.basic.sl_network import Net
-            import torch
-            self.policy_net = Net().to(self.device)
-            self.policy_net.eval()
-            model_path = "models/sl_policy_v1_base.pth"
-            if os.path.exists(model_path):
-                self.policy_net.load_state_dict(torch.load(model_path, map_location=self.device))
-                logger.info(f"[OK] SL Policy Model loaded from {model_path}")
-            else:
-                logger.warning(f"SL Model not found at {model_path}")
-                self.policy_net = None
-        except Exception as e:
-            logger.warning(f"Failed to load SL Policy model: {e}")
-            self.policy_net = None
+        logger.info("[OK] Classic AI agents initialized (Greedy, Minimax, AlphaBeta)")
 
         self.enable_mcts = enable_mcts and MCTS_AVAILABLE
         if self.enable_mcts:
-            self.mcts_agent = MCTSAgent(time_limit=None, iteration_limit=MCTS_ITERATION_LIMIT)
+            self.mcts_agent = MCTSAgent(iteration_limit=MCTS_ITERATION_LIMIT)
             logger.info(f"[OK] MCTS initialized (iter={MCTS_ITERATION_LIMIT})")
         else:
             self.mcts_agent = None
 
-    def _get_policy_score(self, board: Board, player: int, move_x: int, move_y: int) -> float:
-        """Get probability of this move from SL policy network"""
-        if not self.policy_net: return 0.5
-        
-        import torch
-        import numpy as np
-        
-        try:
-            inp = np.zeros((15, 15), dtype=np.float32)
-            b_np = np.array(board.board)
-            inp[b_np == player] = 1.0
-            inp[(b_np != 0) & (b_np != player)] = -1.0
-            
-            t_inp = torch.tensor(inp).unsqueeze(0).unsqueeze(0).to(self.device)
-            with torch.no_grad():
-                logits = self.policy_net(t_inp)
-                probs = torch.softmax(logits, dim=1)
-                
-                # Get prob for specific move
-                idx = move_x * 15 + move_y
-                score = probs[0][idx].item()
-                
-                # Normalize: A move with prob > 0.1 is very good in 225 space
-                # Scale roughly 0 to 1 based on practical max
-                normalized = min(score * 10.0, 1.0) 
-                return normalized
-        except Exception as e:
-            logger.error(f"Policy calc error: {e}")
-            return 0.5
+    # Removed _get_policy_score - using 4 classical algorithms instead
 
     def _evaluate_position(self, board: Board, player: int) -> Dict[str, float]:
+        """Evaluate position using 4 classical AI algorithms."""
         scores = {}
-        import math
         
-        def safe_sigmoid(x, scale):
-            val = -x / scale
-            if val > 700: return 0.0 
-            if val < -700: return 1.0 
-            return 1 / (1 + math.exp(val))
-
-        # Greedy Score
-        raw_score = self.alphabeta_agent.evaluate_board(board, player)
-        scores['greedy'] = safe_sigmoid(raw_score, 100000.0) 
-        
-        # AlphaBeta Search Score
-        search_board = copy.deepcopy(board)
         try:
-            ab_value, _ = self.alphabeta_agent.alpha_beta_search(
-                search_board, player, depth=2, alpha=-math.inf, beta=math.inf
-            )
-            scores['alphabeta'] = safe_sigmoid(ab_value, 100000.0)
+            # 1. Greedy - fast heuristic
+            scores['greedy'] = self.greedy_agent.evaluate_board(board, player)
+        except Exception as e:
+            logger.error(f"Greedy error: {e}")
+            scores['greedy'] = 0.5
+        
+        try:
+            # 2. Minimax -  shallow search
+            scores['minimax'] = self.minimax_agent.evaluate_board(board, player)
+        except Exception as e:
+            logger.error(f"Minimax error: {e}")
+            scores['minimax'] = 0.5
+        
+        try:
+            # 3. Alpha-Beta - deep search with pruning
+            scores['alphabeta'] = self.alphabeta_agent.evaluate_board(board, player)
         except Exception as e:
             logger.error(f"Alpha-Beta error: {e}")
-            scores['alphabeta'] = scores['greedy']
+            scores['alphabeta'] = 0.5
         
+        # 4. MCTS - Monte Carlo simulation (optional)
         if self.enable_mcts and self.mcts_agent:
             try:
                 scores['mcts'] = self.mcts_agent.evaluate_board(board, player)
             except Exception as e:
-                logger.error(f"MCTS error: {e}")
+                logger.error(f"MCTS error: {e}", exc_info=True)
                 scores['mcts'] = 0.5
         
         return scores
@@ -161,12 +123,14 @@ class MoveScorer:
         # ... (validation skipped for brevity, assumed safe via wrapper)
         
         board = Board(size=BOARD_SIZE)
-        all_scores = {'greedy': [], 'alphabeta': [], 'policy': []}
+        
+        # Initialize score lists for 4 algorithms
+        all_scores = {'greedy': [], 'minimax': [], 'alphabeta': []}
         if self.enable_mcts:
             all_scores['mcts'] = []
         critical_moments = []
         
-        algo_names = "Policy, Greedy, AlphaBeta" + (", MCTS" if self.enable_mcts else "")
+        algo_names = "Greedy, Minimax, Alpha-Beta" + (", MCTS" if self.enable_mcts else "")
         logger.info(f"[ANALYZE] Analyzing game_id={game_id}, moves={len(moves)}, algos=[{algo_names}]")
         
         move_iterator = enumerate(moves) if not TQDM_AVAILABLE else tqdm(
@@ -175,25 +139,20 @@ class MoveScorer:
         
         for i, move in move_iterator:
             try:
-                # 1. Policy Score (Pre-Move Intuition)
-                policy_val = self._get_policy_score(board, move.player, move.x, move.y)
-                all_scores['policy'].append(policy_val)
-
-                # 2. Make Move
+                # Make move first
                 if not board.place_stone(move.x, move.y, move.player):
-                    logger.error(f"Invalid move at step {move.step}")
-                    for algo in all_scores: 
-                        if algo != 'policy': all_scores[algo].append(0.5)
+                    logger.error(f"Invalid move at step {move.step}: ({move.x}, {move.y})")
+                    for algo in all_scores:
+                        all_scores[algo].append(0.5)
                     continue
                 
-                # 3. Value Scores (Post-Move Execution)
+                # Evaluate position with all algorithms
                 scores = self._evaluate_position(board, move.player)
                 for algo, score in scores.items():
                     all_scores[algo].append(score)
                 
-                # Calculate Average
-                current_scores = [policy_val] + list(scores.values())
-                avg_score = sum(current_scores) / len(current_scores)
+                # Calculate average
+                avg_score = sum(scores.values()) / len(scores)
                 
                 if avg_score >= BRILLIANT_MOVE_THRESHOLD:
                     critical_moments.append({"step": move.step, "type": "Brilliant"})
@@ -206,7 +165,8 @@ class MoveScorer:
             except Exception as e:
                 logger.error(f"Error analyzing move {i+1}: {e}", exc_info=True)
                 for algo in all_scores:
-                    if len(all_scores[algo]) <= i: all_scores[algo].append(0.5)
+                    if len(all_scores[algo]) <= i:
+                        all_scores[algo].append(0.5)
         
         # Create DataFrame
         df_data = {
@@ -396,14 +356,25 @@ class MoveScorer:
 
     def _generate_score_distribution(self, df: pd.DataFrame, game_id: str) -> str:
         """Generate histogram showing distribution of move quality scores."""
-        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-        
         score_columns = [col for col in df.columns if col.endswith('_score')]
+        num_algos = len(score_columns)
+        
+        # Calculate grid size dynamically
+        ncols = 2
+        nrows = (num_algos + 1) // 2  # Ceiling division
+        
+        fig, axes = plt.subplots(nrows, ncols, figsize=(14, 5 * nrows))
+        
+        # Ensure axes is always 2D array
+        if nrows == 1:
+            axes = axes.reshape(1, -1)
+        elif ncols == 1:
+            axes = axes.reshape(-1, 1)
         
         # Plot histogram for each algorithm
         for idx, col in enumerate(score_columns):
-            row = idx // 2
-            col_idx = idx % 2
+            row = idx // ncols
+            col_idx = idx % ncols
             ax = axes[row][col_idx]
             
             algo_name = col.replace('_score', '').title()

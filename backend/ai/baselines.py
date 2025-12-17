@@ -132,3 +132,50 @@ class GreedyAgent:
         self.last_metrics = SearchMetrics(elapsed, explored, len(candidates))
         
         return best_move
+    
+    def evaluate_board(self, board: Board, player: int) -> float:
+        """
+        Evaluate current board position using greedy heuristic.
+        
+        Args:
+            board: Current board state
+            player: Player to evaluate for
+            
+        Returns:
+            float: Normalized score in [0, 1]
+        """
+        directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+        
+        def evaluate_player(target: int) -> float:
+            score = 0.0
+            for x in range(board.size):
+                for y in range(board.size):
+                    if board.board[x][y] == target:
+                        for dx, dy in directions:
+                            count = 1
+                            # Forward
+                            tx, ty = x + dx, y + dy
+                            while board.is_inside(tx, ty) and board.board[tx][ty] == target:
+                                count += 1
+                                tx += dx
+                                ty += dy
+                            # Backward
+                            tx, ty = x - dx, y - dy
+                            while board.is_inside(tx, ty) and board.board[tx][ty] == target:
+                                count += 1
+                                tx -= dx
+                                ty -= dy
+                            
+                            if count >= 5: score += 100000
+                            elif count == 4: score += 5000
+                            elif count == 3: score += 1000
+                            elif count == 2: score += 100
+            return score
+        
+        player_score = evaluate_player(player)
+        opponent_score = evaluate_player(3 - player)
+        
+        # Normalize to [0, 1] using sigmoid
+        raw_score = player_score - opponent_score
+        return 1 / (1 + math.exp(-raw_score / 10000))
+

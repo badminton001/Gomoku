@@ -28,8 +28,11 @@ class AlphaBetaAgent:
         self.start_time = 0
         self.nodes_explored = 0
         
-    def evaluate_board(self, board, player):
-        return self.evaluate_shape(board, player)
+    def evaluate_board(self, board, player) -> float:
+        """Evaluate board and return normalized score in [0, 1]."""
+        raw_score = self.evaluate_shape(board, player)
+        # Normalize using sigmoid
+        return 1 / (1 + math.exp(-raw_score / 100000))
 
     def get_move(self, board: Board, player: int) -> Tuple[int, int]:
         self.start_time = time.time()

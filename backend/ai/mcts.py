@@ -215,3 +215,41 @@ class MCTSAgent:
         
         best_child = max(root.children, key=lambda c: c.visits)
         return best_child.move if best_child.move else (-1, -1)
+    
+    def evaluate_board(self, board: Board, player: int) -> float:
+        """
+        Evaluate board position using MCTS simulations.
+        
+        Args:
+            board: Current board state  
+            player: Player to evaluate for (1 or 2)
+            
+        Returns:
+            float: Win rate estimate in [0, 1]
+        """
+        root = MCTSNode(copy.deepcopy(board), player)
+        
+        for _ in range(self.iteration_limit):
+            node = root
+            
+            # Selection
+            while not node.is_terminal() and not node.get_untried_moves() and node.children:
+                node = node.select_child_ucb(self.exploration_weight)
+            
+            # Expansion  
+            if not node.is_terminal() and node.get_untried_moves():
+                node = node.expand()
+                if node is None:
+                    node = root if not root.children else root.children[-1]
+            
+            # Simulation
+            winner = node.simulate()
+            
+            # Backpropagation
+            node.backpropagate(winner)
+        
+        if root.visits == 0:
+            return 0.5
+            
+        return max(0.0, min(1.0, root.wins / root.visits))
+
