@@ -1,8 +1,4 @@
-"""Model Evaluation Script
-
-Run self-play evaluation and collect performance data
-Includes all available algorithms: Classic + MCTS
-"""
+"""Model Evaluation Script"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -15,7 +11,7 @@ from pathlib import Path
 
 
 def check_checkpoint():
-    """Check for existing checkpoint and ask user"""
+    """Check/Resume Checkpoint."""
     checkpoint_path = Path("./data/results/self_play/checkpoint.json")
     if checkpoint_path.exists():
         print(f"\n[WARN] CHECKPOINT DETECTED")
@@ -28,27 +24,27 @@ def check_checkpoint():
 
 
 def main():
-    """Run complete model evaluation with all algorithms"""
+    """Run all algorithms."""
     print("Model Evaluation - Complete AI Tournament")
     
-    # Check for checkpoint
+    # Check checkpoint
     resume_from_checkpoint = check_checkpoint()
     
-    # Initialize engine
+    # Init engine
     engine = SelfPlayEngine(board_size=15, use_wandb=False)
     
-    # Register AI algorithms
+    # Register AIs
     print("\n[INFO] Registering AI algorithms...")
     
-    # Classic algorithms (fast and practical)
+    # Classic
     engine.register_ai("Greedy", GreedyAgent(distance=2))
     engine.register_ai("Minimax-D2", AlphaBetaAgent(depth=2, time_limit=2.0)) # Maps to AlphaBeta as Minimax
     engine.register_ai("AlphaBeta-D2", AlphaBetaAgent(depth=2, time_limit=2.0))
     
-    # MCTS algorithm
+    # MCTS
     engine.register_ai("MCTS-100", MCTSAgent(iteration_limit=100))
     
-    # Q-Learning (DQN) - if model exists
+    # DQN (if exists)
     try:
         from backend.ai.advanced.qlearning_ai import QLearningAgent
         dqn_agent = QLearningAgent(model_path="models/dqn_v1_final")
@@ -63,11 +59,11 @@ def main():
     print(f"\n[OK] Registered {len(engine.ai_algorithms)} AI algorithms")
     print(f"\n[OK] Registered {len(engine.ai_algorithms)} AI algorithms")
     
-    # Display algorithm info
+    # Info
     print("\n[INFO] Tournament Configuration:")
     print(f"   • Algorithms: {', '.join(engine.ai_algorithms.keys())}")
     
-    # Optimized configuration for MCTS inclusion
+    # Config
     num_games = 10  # 10 games per pair (balanced for time)
     total_matches = len(engine.ai_algorithms) * (len(engine.ai_algorithms) - 1) * num_games
     
@@ -76,12 +72,12 @@ def main():
     print(f"\n[OK] MCTS performance Optimized - expected completion: 4-6 hours")
     print(f"   (MCTS now skips forbidden-move checks during candidate generation)")
     
-    # Run tournament
+    # Run
     print(f"\n[START] Starting tournament...\n")
     
     results = engine.run_round_robin(num_games_per_pair=num_games, verbose=True, resume=resume_from_checkpoint)
     
-    # Save results
+    # Save
     print("\n[SAVE] Saving results...")
     engine.save_results(results, output_dir='./data/results/self_play')
     

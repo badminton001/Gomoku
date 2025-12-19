@@ -6,11 +6,7 @@ from backend.analysis.replay import GameReplay
 from backend.api.services.move_scorer import MoveScorer
 
 class ReplayService:
-    """
-    Game Replay Service
-    - Save/Load .json replays
-    - Call AI to analyze game situations
-    """
+    """Game Replay Service."""
 
     def __init__(self, data_dir="data/games"):
         # Automatically create storage directory
@@ -63,9 +59,7 @@ class ReplayService:
         return replays
 
     def analyze_replay(self, game_id: str) -> Dict[str, Any]:
-        """
-        Analyze specified replay with AI
-        """
+        """Analyze specified replay with AI."""
         replay = self.load_replay(game_id)
         if not replay:
             return {"error": "Game not found"}
@@ -74,8 +68,7 @@ class ReplayService:
             self.scorer = MoveScorer(enable_mcts=False) # Default to generic scorer
             
         # Call Scorer
-        # Note: Scorer expects List[Move] (from replay import Move)
-        # GameReplay has .moves which is List[Move]
+        # Call Scorer
         analysis_result = self.scorer.score_moves(replay.moves, game_id=game_id)
         
         return analysis_result

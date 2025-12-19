@@ -19,9 +19,7 @@ from backend.services.move_scorer import MoveScorer
 class TestPersonBServices(unittest.TestCase):
 
     def setUp(self):
-        """
-        Setup before each test.
-        """
+        """Setup before each test."""
         # Set temp directory
         self.test_base_dir = os.path.join(current_dir, "temp_test_output")
         self.test_games_dir = os.path.join(self.test_base_dir, "games")
@@ -40,15 +38,11 @@ class TestPersonBServices(unittest.TestCase):
                 os.makedirs(d)
 
     def tearDown(self):
-        """
-        Cleanup after tests.
-        """
+        """Cleanup after tests."""
         pass
 
     def test_full_workflow_pandas_and_matplotlib(self):
-        """
-        Core Test: Validate Pandas data organization + Matplotlib plotting.
-        """
+        """Core Test: Validate scoring workflow."""
         print("\nTesting: Full Scoring Workflow (Table & Chart Generation)...")
 
         # 1. Prepare Fake Data
@@ -89,9 +83,7 @@ class TestPersonBServices(unittest.TestCase):
         print(f"PNG Chart Generated: {chart_path}")
 
     def test_replay_save_load(self):
-        """
-        Basic Test: Verify Replay Service Save/Load.
-        """
+        """Basic Test: Verify Replay Service."""
         print("\nTesting: Replay Service Save/Load...")
         fake_game = GameReplay(
             game_id="test_io_001",

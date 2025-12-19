@@ -38,15 +38,7 @@ except ImportError:
 
 
 class MoveScorer:
-    """
-    Multi-algorithm move scoring system for game replay analysis.
-    
-    Evaluates each move using multiple AI algorithms:
-    - Policy Network (Intuition): SL model probability
-    - Greedy: fast heuristic-based evaluation
-    - Alpha-Beta: optimized minimax with pruning
-    - MCTS: simulation-based Monte Carlo evaluation (optional)
-    """
+    """Multi-algorithm move scoring system for analysis."""
 
     def __init__(self, enable_mcts: bool = False):
         self.charts_dir, self.stats_dir = CHARTS_DIR, STATS_DIR
@@ -208,20 +200,7 @@ class MoveScorer:
         }
 
     def generate_visualizations(self, df: pd.DataFrame, board: Board, game_id: str) -> Dict[str, str]:
-        """
-        Generate comprehensive visualizations including:
-        1. Multi-algorithm comparison chart
-        2. Move heatmap on board
-        3. Score distribution histogram
-        
-        Args:
-            df: DataFrame with all move data
-            board: Final board state
-            game_id: Game identifier
-            
-        Returns:
-            Dictionary mapping visualization type to file path
-        """
+        """Generate analysis charts."""
         chart_paths = {}
         
         # 1. Multi-algorithm comparison chart (existing)
@@ -236,7 +215,7 @@ class MoveScorer:
         return chart_paths
 
     def _generate_comparison_chart(self, df: pd.DataFrame, game_id: str) -> str:
-        """Generate multi-algorithm comparison line chart."""
+        """Generate line chart comparison."""
         plt.figure(figsize=(14, 8))
         
         # Plot scores from all algorithms
@@ -289,7 +268,7 @@ class MoveScorer:
         return output_path
 
     def _generate_move_heatmap(self, df: pd.DataFrame, board: Board, game_id: str) -> str:
-        """Generate heatmap showing move quality distribution on the board."""
+        """Generate heatmap of move quality."""
         import numpy as np
         import matplotlib.cm as cm
         
@@ -346,7 +325,7 @@ class MoveScorer:
         return output_path
 
     def _generate_score_distribution(self, df: pd.DataFrame, game_id: str) -> str:
-        """Generate histogram showing distribution of move quality scores."""
+        """Generate histograms of scores."""
         score_columns = [col for col in df.columns if col.endswith('_score')]
         num_algos = len(score_columns)
         

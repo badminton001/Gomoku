@@ -15,7 +15,7 @@ def install_dependencies():
         print(f"Warning: Dependency installation failed: {e}")
 
 def find_script(script_name):
-    # Search for script in /kaggle/working
+    # Search script
     for root, dirs, files in os.walk("/kaggle/working"):
         if script_name in files:
             return os.path.join(root, script_name)
@@ -32,14 +32,13 @@ def run_evaluation():
     print(f"[OK] Found script at: {script_path}")
     
     # Calculate Project Root (Parent of 'scripts')
-    # script_path is .../scripts/run_full_evaluation.py
-    # we want .../ (Parent of scripts)
+    # Calc Root
     scripts_dir = os.path.dirname(script_path)
     project_root = os.path.dirname(scripts_dir)
     
     print(f"[OK] Project Root appears to be: {project_root}")
     
-    # Change CWD to Project Root so imports work
+    # Change CWD
     os.chdir(project_root)
     print(f"working directory changed to: {os.getcwd()}")
     
@@ -50,12 +49,12 @@ def run_evaluation():
 def package_results():
     print(">>> Packaging Results...")
     
-    # Results should be in ./data/results relative to CWD
+    # Results dir
     src_dir = "./data/results"
     
     if not os.path.exists(src_dir):
         print(f"Error: Results directory {src_dir} not found in {os.getcwd()}!")
-        # Try to find it if it's elsewhere
+        # Find it
         for root, dirs, files in os.walk("/kaggle/working"):
             if "results" in dirs and "data" in root.split(os.sep):
                  src_dir = os.path.join(root, "results")
@@ -63,7 +62,7 @@ def package_results():
                  break
     
     if os.path.exists(src_dir):
-        # Create zip in /kaggle/working so it's downloadable
+        # Create zip
         output_path = "/kaggle/working/gomoku_results"
         shutil.make_archive(output_path, 'zip', src_dir)
         print(f"[OK] Success! Results packed to: {output_path}.zip")
@@ -81,7 +80,7 @@ def main():
         run_evaluation()
     except Exception as e:
         print(f"Evaluation Failed: {e}")
-        # We still try to package whatever logs exist
+        # Continue
         
     # 3. Zip Output
     package_results()

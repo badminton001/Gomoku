@@ -11,7 +11,7 @@ import os
 from joblib import Parallel, delayed
 from typing import List, Tuple, Optional, Dict
 
-# 1. BOARD & ENGINE (Simplified)
+# 1. BOARD & ENGINE
 
 class Board:
     def __init__(self, size: int = 15) -> None:
@@ -40,7 +40,7 @@ class Board:
         for x in range(n):
             for y in range(n):
                 if self.board[x][y] != player: continue
-                # Optimized check
+                # Optimized
                 board_val = self.board
                 for dx, dy in self._DIRS:
                     c = 1
@@ -139,7 +139,7 @@ class AlphaBetaAgent:
         
         value = -math.inf
         for mx, my in candidates:
-            # Removed time constraint for Kaggle batch processing
+            # Limit removed
             board.place_stone(mx, my, color)
             val = -self.negamax(board, depth - 1, -beta, -alpha, 3 - color)
             board.board[mx][my] = 0
@@ -155,7 +155,7 @@ class AlphaBetaAgent:
         scored = []
         opp = 3 - player
         for mx, my in moves:
-            # Heuristic embedded
+            # Heuristic
             board.board[mx][my] = player
             atk = self._quick_score(board, mx, my, player)
             board.board[mx][my] = 0
@@ -169,13 +169,13 @@ class AlphaBetaAgent:
             elif atk >= SCORE_FIVE: score = SCORE_FIVE
             elif dfs >= SCORE_LIVE_4: score = SCORE_LIVE_4 * 2
             elif atk >= SCORE_LIVE_4: score = SCORE_LIVE_4
-            elif dfs >= SCORE_DEAD_4: score = SCORE_DEAD_4 * 2 # Block 4
+            elif dfs >= SCORE_DEAD_4: score = SCORE_DEAD_4 * 2 # Block
             elif atk >= SCORE_DEAD_4: score = SCORE_DEAD_4
             else: score = atk + dfs
             scored.append((score, (mx, my)))
         
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [x[1] for x in scored[:15]] # Prune to top 15 for speed
+        return [x[1] for x in scored[:15]] # Top 15
 
     def _quick_score(self, board, x, y, player):
         score = 0
@@ -232,7 +232,7 @@ class RandomAgent:
 # 3. PARALLEL DATA GENERATION
 
 def play_one_game(teacher_depth, opponent_type):
-    # worker function for Parallel
+    # Worker
     teacher = AlphaBetaAgent(depth=teacher_depth)
     
     if opponent_type == "Random":
@@ -245,7 +245,7 @@ def play_one_game(teacher_depth, opponent_type):
     engine = GameEngine()
     engine.make_move(7, 7) # Open
     
-    # 50% chance to random 2nd move
+    # 50% random 2nd
     if random.random() < 0.5:
         try:
              moves = get_neighbor_moves(engine.board)
@@ -254,13 +254,13 @@ def play_one_game(teacher_depth, opponent_type):
         except: pass
         
     game_history = []
-    # Randomize who is teacher (P1 or P2)
+    # Random teacher P1/P2
     teacher_p = 1 if random.random() < 0.5 else 2
     
     while not engine.game_over and engine.board.move_count < 225:
         p = engine.current_player
         
-        # Snapshot input
+        # Snapshot
         mnode = np.zeros((15,15), dtype=np.float32)
         for r in range(15):
             for c in range(15):
@@ -288,14 +288,14 @@ def generate_parallel(total_games=1000):
     print(f"Generating Parallel Dataset ({total_games} games)...")
     start = time.time()
     
-    n_jobs = 4 # Kaggle has 4 cores usually
+    n_jobs = 4 # Cores
     
     tasks = []
-    # Phase 1: Random
+    # 1: Random
     tasks.extend([("Random") for _ in range(200)])
-    # Phase 2: Greedy
+    # 2: Greedy
     tasks.extend([("Greedy") for _ in range(300)])
-    # Phase 3: Strong (Reduced count but Parallel helps)
+    # 3: Strong
     tasks.extend([("Strong") for _ in range(500)])
     
     # Execute

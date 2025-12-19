@@ -1,11 +1,4 @@
-"""
-Utility functions for game scoring and analysis.
-
-This module provides helper functions for the move scoring system including
-score normalization, validation, and statistical operations.
-
-Author: Person B - Game Replay & Scoring Team
-"""
+"""Utility functions for scoring and analysis."""
 
 import math
 import logging
@@ -26,38 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 def normalize_score_sigmoid(raw_score: float, scale: float = SIGMOID_SCALE_SEARCH) -> float:
-    """
-    Normalize raw evaluation score to [0, 1] range using sigmoid function.
-    
-    Args:
-        raw_score: Raw score from evaluation function
-        scale: Scale factor for sigmoid normalization
-        
-    Returns:
-        Normalized score in [0, 1] range
-        
-    Example:
-        >>> normalize_score_sigmoid(10000)
-        0.731...
-    """
+    """Normalize score to [0, 1] using sigmoid."""
     return 1.0 / (1.0 + math.exp(-raw_score / scale))
 
 
 def validate_move(move: Move, board_size: int = 15) -> bool:
-    """
-    Validate a single move.
-   
-    Args:
-        move: Move object to validate
-        board_size: Size of the game board
-        
-    Returns:
-        True if valid
-        
-    Raises:
-        TypeError: If move is not a Move object
-        ValueError: If move coordinates are out of bounds
-    """
+    """Validate a single move."""
     if not isinstance(move, Move):
         raise TypeError(f"Expected Move object, got {type(move)}")
     
@@ -74,19 +41,7 @@ def validate_move(move: Move, board_size: int = 15) -> bool:
 
 
 def validate_moves_list(moves: List[Move], board_size: int = 15) -> bool:
-    """
-    Validate a list of moves before processing.
-    
-    Args:
-        moves: List of Move objects
-        board_size: Size of the game board
-        
-    Returns:
-        True if all moves are valid
-        
-    Raises:
-        ValueError: If move list is invalid
-    """
+    """Validate a list of moves."""
     if not moves:
         raise ValueError("Move list cannot be empty")
     
@@ -113,23 +68,7 @@ def validate_moves_list(moves: List[Move], board_size: int = 15) -> bool:
 
 
 def classify_move_quality(score: float) -> str:
-    """
-    Classify move quality based on score.
-    
-    Args:
-        score: Normalized score in [0, 1] range
-        
-    Returns:
-        Move quality classification ('Brilliant', 'Normal', 'Blunder')
-        
-    Example:
-        >>> classify_move_quality(0.85)
-        'Brilliant'
-        >>> classify_move_quality(0.5)
-        'Normal'
-        >>> classify_move_quality(0.15)
-        'Blunder'
-    """
+    """Classify move ('Brilliant', 'Normal', 'Blunder')."""
     if score >= BRILLIANT_MOVE_THRESHOLD:
         return 'Brilliant'
     elif score < BLUNDER_MOVE_THRESHOLD:
@@ -142,22 +81,7 @@ def detect_critical_moments(
     scores: List[float],
     threshold: float = 0.15
 ) -> List[Dict[str, Any]]:
-    """
-    Detect critical moments by analyzing score changes.
-    
-    Args:
-        scores: List of scores over time
-        threshold: Minimum score change to be considered critical
-        
-    Returns:
-        List of dictionaries with critical moment information
-        
-    Example:
-        >>> scores = [0.5, 0.5, 0.7, 0.3, 0.8]
-        >>> moments = detect_critical_moments(scores, threshold=0.15)
-        >>> len(moments)
-        2
-    """
+    """Detect significant score changes."""
     critical_moments = []
     
     for i in range(1, len(scores)):
@@ -176,20 +100,7 @@ def detect_critical_moments(
 
 
 def calculate_score_statistics(scores: List[float]) -> Dict[str, float]:
-    """
-    Calculate statistical metrics for a list of scores.
-    
-    Args:
-        scores: List of scores
-        
-    Returns:
-        Dictionary with statistical metrics
-        
-    Example:
-        >>> stats = calculate_score_statistics([0.5, 0.6, 0.7, 0.8])
-        >>> stats['mean']
-        0.65
-    """
+    """Calculate basic statistics (mean, std, etc.)."""
     if not scores:
         return {
             'mean': 0.0,
@@ -212,33 +123,12 @@ def calculate_score_statistics(scores: List[float]) -> Dict[str, float]:
 
 
 def format_score_percentage(score: float, decimal_places: int = 2) -> str:
-    """
-    Format score as percentage string.
-    
-    Args:
-        score: Score in [0, 1] range
-        decimal_places: Number of decimal places
-        
-    Returns:
-        Formatted percentage string
-        
-    Example:
-        >>> format_score_percentage(0.8523, 2)
-        '85.23%'
-    """
+    """Format score as percentage."""
     return f"{score * 100:.{decimal_places}f}%"
 
 
 def ensure_directory_exists(directory: str) -> str:
-    """
-    Ensure directory exists, create if it doesn't.
-    
-    Args:
-        directory: Directory path
-        
-    Returns:
-        Directory path
-    """
+    """Create directory if not exists."""
     import os
     
     if not os.path.exists(directory):

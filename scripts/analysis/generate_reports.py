@@ -1,7 +1,4 @@
-"""Report Generation Script
-
-Automatically generates Markdown format experiment reports
-"""
+"""Report Generation Script"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -11,7 +8,7 @@ from datetime import datetime
 
 
 def generate_data_analysis_report():
-    """Generate data analysis report"""
+    """Generate report."""
     
     # Load data
     win_rates = pd.read_csv("./data/results/win_rates.csv")
@@ -98,7 +95,7 @@ def main():
     
     print("\n[INFO] Generating reports...\n")
     
-    # Generate data analysis report
+    # Generate report
     report_path = generate_data_analysis_report()
     
     print("\nReport Generation Complete!")

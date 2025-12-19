@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 
 def extract_latest_data(log_dir):
-    """Extract latest training data from log directory"""
+    """Extract latest data."""
     if not os.path.exists(log_dir):
         print(f"Error: Log directory '{log_dir}' not found.")
         return None
@@ -41,7 +41,7 @@ def extract_latest_data(log_dir):
 
 
 def plot_15x15_performance(data):
-    """Plot training performance chart"""
+    """Plot performance."""
     if not data:
         print("No data to plot.")
         return

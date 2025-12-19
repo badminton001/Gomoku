@@ -1,7 +1,4 @@
-"""Self-Play Engine Core Module
-
-Responsible for automated battles between multiple AI algorithms, result collection, and performance metric tracking.
-"""
+"""Self-Play Engine Core Module."""
 import numpy as np
 import time
 from typing import List, Dict, Tuple, Optional
@@ -41,18 +38,10 @@ class GameResult:
 
 
 class SelfPlayEngine:
-    """Self-Play Engine
-    
-    Supports round-robin evaluation of multiple AI algorithms and collects performance metrics.
-    """
+    """Self-Play Engine supporting round-robin."""
     
     def __init__(self, board_size: int = 15, use_wandb: bool = False):
-        """Initialize Self-Play Engine
-        
-        Args:
-            board_size: Size of the board
-            use_wandb: Whether to use Wandb for experiment tracking
-        """
+        """Init Self-Play Engine."""
         self.board_size = board_size
         self.use_wandb = use_wandb
         self.ai_algorithms = {}
@@ -75,26 +64,12 @@ class SelfPlayEngine:
                 self.use_wandb = False
     
     def register_ai(self, name: str, ai_instance):
-        """Register AI algorithm
-        
-        Args:
-            name: Algorithm name
-            ai_instance: AI instance, must have get_move(board, player) method
-        """
+        """Register AI algorithm."""
         self.ai_algorithms[name] = ai_instance
         print(f"[OK] Registered AI: {name}")
     
     def play_single_match(self, ai1_name: str, ai2_name: str, verbose: bool = False) -> GameResult:
-        """Play a single match
-        
-        Args:
-            ai1_name: Name of first player (Black)
-            ai2_name: Name of second player (White)
-            verbose: Whether to print detailed info (including every move)
-            
-        Returns:
-            GameResult object
-        """
+        """Play a single match."""
         board = Board(self.board_size)
         ai1 = self.ai_algorithms[ai1_name]
         ai2 = self.ai_algorithms[ai2_name]
@@ -231,16 +206,7 @@ class SelfPlayEngine:
         )
     
     def run_round_robin(self, num_games_per_pair: int = 10, verbose: bool = True, resume: bool = False) -> List[GameResult]:
-        """Round Robin Tournament
-        
-        Args:
-            num_games_per_pair: Number of games per pair
-            verbose: Whether to print progress
-            resume: Whether to resume from checkpoint
-            
-        Returns:
-            List of all game results
-        """
+        """Round Robin Tournament."""
         ai_names = sorted(list(self.ai_algorithms.keys()))
         all_results = []
         
@@ -318,15 +284,7 @@ class SelfPlayEngine:
         return all_results
     
     def save_results(self, results: List[GameResult], output_dir: str = './data/results/self_play'):
-        """Save results
-        
-        Args:
-            results: List of game results
-            output_dir: Output directory
-            
-        Returns:
-            (Detailed JSON path, Aggregated CSV path)
-        """
+        """Save results to JSON and CSV."""
         import os
         import pandas as pd
         

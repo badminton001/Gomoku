@@ -1,10 +1,4 @@
-"""Parallel Self-Play Evaluation System - True Multiprocessing
-
-Uses multiprocessing to run 5 processes simultaneously, bypassing the Python GIL.
-
-Usage:
-    python scripts/parallel_eval_5processes.py --games-per-pair 17
-"""
+"""Parallel Self-Play Evaluation"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -26,14 +20,14 @@ from backend.ai.hybrid import HybridAgent
 
 
 def get_output_dir(custom_dir: str = None) -> Path:
-    """Get the output directory."""
+    """Get output directory."""
     if custom_dir:
         return Path(custom_dir)
     return Path("./data/results/self_play/5processes")
 
 
 def create_ai_agents() -> Dict[str, any]:
-    """Create all AI agent instances."""
+    """Create agents."""
     agents = {}
     agents["Greedy"] = GreedyAgent(distance=2)
     agents["AlphaBeta"] = AlphaBetaAgent(depth=4, time_limit=4.0)
@@ -57,7 +51,7 @@ def create_ai_agents() -> Dict[str, any]:
 
 
 def get_matchups(ai_names: List[str]) -> List[Tuple[str, str]]:
-    """Generate all matchmaking pairs."""
+    """Generate matchups."""
     matchups = []
     for i, ai1 in enumerate(ai_names):
         for ai2 in ai_names[i+1:]:
@@ -66,17 +60,16 @@ def get_matchups(ai_names: List[str]) -> List[Tuple[str, str]]:
 
 
 def run_process_batch(process_id: int, matchups: List[Tuple[str, str]], games_per_pair: int, output_dir_str: str = None):
-    """Run a batch of matchups in a separate process."""
+    """Run batch process."""
     print(f"[Process {process_id}] Started, processing {len(matchups)} matchups")
     
-    # Create AI agents independently for each process
+    # Create agents
     ai_agents = create_ai_agents()
     
     # Create engine
     engine = SelfPlayEngine(board_size=15, use_wandb=False)
     
-    # Register required AI
-    registered_ais = set()
+    # Register AI
     for ai1, ai2 in matchups:
         if ai1 not in registered_ais:
             engine.register_ai(ai1, ai_agents[ai1])
@@ -85,7 +78,7 @@ def run_process_batch(process_id: int, matchups: List[Tuple[str, str]], games_pe
             engine.register_ai(ai2, ai_agents[ai2])
             registered_ais.add(ai2)
     
-    # Run each matchup
+    # Run matchups
     batch_results = []
     total_games = len(matchups) * games_per_pair * 2
     completed = 0
@@ -144,7 +137,7 @@ if __name__ == "__main__":
     
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Generate Tasks
+    # 1. Tasks
     temp_agents = create_ai_agents()
     ai_names = list(temp_agents.keys())
     matchups = get_matchups(ai_names)

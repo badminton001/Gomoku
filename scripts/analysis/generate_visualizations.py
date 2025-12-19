@@ -1,7 +1,4 @@
-"""Visualization Generation Script
-
-Generates 15+ high-quality visualization charts
-"""
+"""Visualization Generator"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -23,20 +20,20 @@ except ImportError:
     print("[ERROR] Matplotlib/Seaborn not installed. Please run: pip install matplotlib seaborn")
     sys.exit(1)
 
-# Set style for matplotlib
+# Matplotlib style
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.5)
 
 
 def create_output_dir():
-    """Create output directory"""
+    """Create output dir."""
     output_dir = "./data/results/visualizations"
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
 
 
 def load_data():
-    """Load all analysis results"""
+    """Load results."""
     data = pd.read_csv("./data/results/self_play/preprocessed_data.csv")
     win_rates = pd.read_csv("./data/results/win_rates.csv")
     time_stats = pd.read_csv("./data/results/response_times.csv")
@@ -46,10 +43,10 @@ def load_data():
     return data, win_rates, time_stats, matchup_matrix, elo_ratings
 
 
-# Plotly Interactive Charts
+# Plotly Charts
 
 def plot_matchup_heatmap(matchup_matrix, output_dir):
-    """1. Matchup Matrix Heatmap"""
+    """Matchup Heatmap."""
     fig = go.Figure(data=go.Heatmap(
         z=matchup_matrix.values,
         x=matchup_matrix.columns,
@@ -75,7 +72,7 @@ def plot_matchup_heatmap(matchup_matrix, output_dir):
 
 
 def plot_win_rate_comparison(win_rates, output_dir):
-    """2. Win Rate Comparison Bar Chart"""
+    """Win Rate Bar Chart."""
     fig = go.Figure()
     
     fig.add_trace(go.Bar(
@@ -100,7 +97,7 @@ def plot_win_rate_comparison(win_rates, output_dir):
 
 
 def plot_response_time_boxplot(data, time_stats, output_dir):
-    """3. Response Time Box Plot"""
+    """Response Time Box Plot."""
     ai_names = time_stats['algorithm'].tolist()
     
     fig = go.Figure()
@@ -128,7 +125,7 @@ def plot_response_time_boxplot(data, time_stats, output_dir):
 
 
 def plot_elo_ratings(elo_ratings, output_dir):
-    """4. ELO Rating Chart"""
+    """ELO Ratings."""
     fig = go.Figure()
     
     colors = px.colors.sequential.Viridis
@@ -154,7 +151,7 @@ def plot_elo_ratings(elo_ratings, output_dir):
 
 
 def plot_move_distribution(data, output_dir):
-    """5. Move Count Distribution Histogram"""
+    """Move Count Dist."""
     fig = px.histogram(
         data,
         x='total_moves',
@@ -176,10 +173,10 @@ def plot_move_distribution(data, output_dir):
     print("[OK] [5/15] Move distribution")
 
 
-# Matplotlib/Seaborn Static Charts
+# Static Charts
 
 def plot_algorithm_ranking(win_rates, output_dir):
-    """6. Algorithm Ranking Chart"""
+    """Algorithm Ranking."""
     fig, ax = plt.subplots(figsize=(10, 6))
     
     colors = sns.color_palette("RdYlGn", len(win_rates))
@@ -200,7 +197,7 @@ def plot_algorithm_ranking(win_rates, output_dir):
 
 
 def plot_time_vs_winrate(win_rates, time_stats, output_dir):
-    """7. Time vs Win Rate Scatter Plot"""
+    """Time vs Win Rate."""
     merged = win_rates.merge(time_stats, on='algorithm')
     
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -238,7 +235,7 @@ def plot_time_vs_winrate(win_rates, time_stats, output_dir):
 
 
 def plot_correlation_matrix(data, output_dir):
-    """8. Correlation Matrix"""
+    """Correlation Matrix."""
     numeric_cols = ['total_moves', 'player1_avg_time', 'player2_avg_time', 'total_time']
     corr = data[numeric_cols].corr()
     
@@ -262,7 +259,7 @@ def plot_correlation_matrix(data, output_dir):
 
 
 def plot_win_loss_stats(win_rates, output_dir):
-    """9. Win-Loss Statistics Stacked Bar Chart"""
+    """Win-Loss Stats."""
     fig, ax = plt.subplots(figsize=(10, 6))
     
     x = np.arange(len(win_rates))
@@ -285,7 +282,7 @@ def plot_win_loss_stats(win_rates, output_dir):
 
 
 def plot_time_distribution(time_stats, output_dir):
-    """10. Time Distribution Comparison"""
+    """Time Distribution."""
     fig, ax = plt.subplots(figsize=(10, 6))
     
     x = np.arange(len(time_stats))
@@ -307,7 +304,7 @@ def plot_time_distribution(time_stats, output_dir):
 
 
 def plot_game_length_category(data, output_dir):
-    """11. Game Length Category"""
+    """Game Length Categories."""
     category_counts = data['game_length_category'].value_counts()
     
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -321,7 +318,7 @@ def plot_game_length_category(data, output_dir):
 
 
 def plot_algorithm_winrate_trend(data, output_dir):
-    """12. Win Rate Trend (Cumulative)"""
+    """Win Rate Trend."""
     algorithms = sorted(set(data['player1'].unique()) | set(data['player2'].unique()))
     
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -356,10 +353,10 @@ def plot_algorithm_winrate_trend(data, output_dir):
 
 
 def plot_performance_radar(win_rates, time_stats, output_dir):
-    """13. Performance Radar Chart"""
+    """Performance Radar."""
     merged = win_rates.merge(time_stats, on='algorithm')
     
-    # Normalize metrics (0-1)
+    # Normalize
     merged['win_rate_norm'] = merged['win_rate']
     merged['speed_norm'] = 1 - (merged['mean_time'] - merged['mean_time'].min()) / (merged['mean_time'].max() - merged['mean_time'].min() + 0.001)
     merged['stability_norm'] = 1 - (merged['std_time'] - merged['std_time'].min()) / (merged['std_time'].max() - merged['std_time'].min() + 0.001)
@@ -392,12 +389,12 @@ def plot_performance_radar(win_rates, time_stats, output_dir):
 
 
 def plot_moves_vs_time(data, output_dir):
-    """14. Moves vs Time Scatter Plot"""
+    """Moves vs Time."""
     fig, ax = plt.subplots(figsize=(10, 6))
     
     ax.scatter(data['total_moves'], data['total_time'], alpha=0.6, s=50)
     
-    # Add trend line
+    # Trend line
     z = np.polyfit(data['total_moves'], data['total_time'], 1)
     p = np.poly1d(z)
     ax.plot(data['total_moves'], p(data['total_moves']), "r--", alpha=0.8, linewidth=2)
@@ -414,18 +411,18 @@ def plot_moves_vs_time(data, output_dir):
 
 
 def plot_summary_dashboard(win_rates, time_stats, elo_ratings, output_dir):
-    """15. Summary Dashboard"""
+    """Summary Dashboard."""
     fig = plt.figure(figsize=(16, 10))
     gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
     
-    # Win rate bar chart
+    # Win rate
     ax1 = fig.add_subplot(gs[0, :2])
     ax1.barh(win_rates['algorithm'], win_rates['win_rate'], color='skyblue')
     ax1.set_xlabel('Win Rate')
     ax1.set_title('Algorithm Win Rate Ranking', fontweight='bold')
     ax1.set_xlim(0, 1)
     
-    # ELO ratings
+    # ELO
     ax2 = fig.add_subplot(gs[0, 2])
     ax2.bar(range(len(elo_ratings)), elo_ratings['elo_rating'], color='lightgreen')
     ax2.set_xticks(range(len(elo_ratings)))
@@ -433,7 +430,7 @@ def plot_summary_dashboard(win_rates, time_stats, elo_ratings, output_dir):
     ax2.set_ylabel('ELO Rating')
     ax2.set_title('ELO Ratings', fontweight='bold')
     
-    # Response time
+    # Time
     ax3 = fig.add_subplot(gs[1, :])
     x = np.arange(len(time_stats))
     ax3.bar(x, time_stats['mean_time'], alpha=0.7, color='coral')
@@ -442,7 +439,7 @@ def plot_summary_dashboard(win_rates, time_stats, elo_ratings, output_dir):
     ax3.set_ylabel('Average Response Time (seconds)')
     ax3.set_title('Response Time Comparison', fontweight='bold')
     
-    # Win-loss-draw statistics
+    # Win/Loss/Draw
     ax4 = fig.add_subplot(gs[2, :])
     x = np.arange(len(win_rates))
     width = 0.6
@@ -461,10 +458,10 @@ def plot_summary_dashboard(win_rates, time_stats, elo_ratings, output_dir):
     plt.close()
 
 
-# Main Function
+# Main
 
 def main():
-    """Generate all visualizations"""
+    """Generate visualizations."""
     import argparse
     parser = argparse.ArgumentParser(description="Generate Visualizations")
     parser.add_argument('--input-dir', type=str, default="./data/results", help="Input directory containing CSVs")
@@ -473,7 +470,7 @@ def main():
 
     print("\nVisualization Generation")
     
-    # Create output directory
+    # Output dir
     output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
     print(f"\n[INFO] Output directory: {output_dir}\n")
@@ -491,10 +488,10 @@ def main():
         print(f"[ERROR] Error loading data: {e}")
         return
 
-    # Generate charts
+    # Generate
     print("[INFO] Generating visualizations...\n")
     
-    # Plotly interactive charts (5)
+    # Interactive (5)
     try: plot_matchup_heatmap(matchup_matrix, output_dir)
     except: pass
     try: plot_win_rate_comparison(win_rates, output_dir)
@@ -506,7 +503,7 @@ def main():
     try: plot_move_distribution(data, output_dir)
     except: pass
     
-    # Matplotlib static charts (10)
+    # Static (10)
     try: plot_algorithm_ranking(win_rates, output_dir)
     except: pass
     try: plot_time_vs_winrate(win_rates, time_stats, output_dir)

@@ -31,7 +31,7 @@ def train(dataset_path="data/anti_greedy.pkl", model_path="models/sl_policy_v1_b
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = Net().to(device)
     
-    # Load previous weights
+    # Load weights
     if os.path.exists(model_path):
         state = torch.load(model_path, map_location=device)
         model.load_state_dict(state)

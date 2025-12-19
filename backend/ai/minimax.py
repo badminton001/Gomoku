@@ -1,9 +1,4 @@
-"""
-Strong AI Module (Alpha-Beta).
-
-Implements a Minimax algorithm with Alpha-Beta pruning and iterative deepening.
-Uses a heuristic shape scoring system (Live 4, Dead 3, etc.) for leaf evaluation.
-"""
+"""Alpha-Beta Pruning Minimax Agent."""
 import time
 import math
 import random
@@ -38,7 +33,7 @@ class AlphaBetaAgent:
         self.start_time = time.time()
         self.nodes_explored = 0
         
-        # Clone board to prevent side-effects on the live game state
+        # Copy board state
         import copy
         search_board = copy.deepcopy(board)
         
@@ -132,9 +127,6 @@ class AlphaBetaAgent:
             
             # Back to Max
             val, _ = self.alpha_beta_search(board, original_player, depth - 1, alpha, beta)
-            # CAUTION: This recursion logic in original file was tricky (Max -> Min -> Max).
-            # alpha_beta_search returns Tuple(score, move).
-            # Here we just want the score 'val'.
             
             board.board[mx][my] = 0
             
@@ -210,10 +202,7 @@ class AlphaBetaAgent:
         score = 0
         opponent = 3 - player
         
-        # Simplified shape evaluation for documentation purpose
-        # (Real implementation typically scans lines)
-        # We assume _evaluate_line is available or we implement a simple one here.
-        # Since I am rewriting, I must provide an implementation.
+        # Simplified implementation
         
         # Horizontal
         for x in range(board.size):
@@ -224,8 +213,7 @@ class AlphaBetaAgent:
              col = [board.board[x][y] for x in range(board.size)]
              score += self._evaluate_line(col, player, opponent)
              
-        # Diagonals omitted for brevity in this simplified version
-        # (In robust implementation, all directions are checked)
+        # Diagonals omitted for brevity
         
         return score
 
@@ -260,8 +248,7 @@ class AlphaBetaAgent:
         scored_moves = []
         
         # 2. Score each candidate (Shallow Evaluation)
-        # using depth=0 evaluation for speed, or depth=1 for better accuracy
-        for move in candidates[:20]: # Only evaluate top 20 to save time
+        for move in candidates[:20]:
             mx, my = move
             # Try move
             board.place_stone(mx, my, player)

@@ -60,12 +60,12 @@ def main():
     # Load Hybrid (P1)
     # Check for fine-tuned models in priority order
     possible_models = [
-        "models/sl_policy_v2_kaggle.pth",        # Kaggle Priority
-        "models/sl_policy_v1_finetuned.pth",  # Local Finetune
-        "models/sl_policy_v1_base.pth"             # Base
+        "models/sl_policy_v2_kaggle.pth",     # Kaggle
+        "models/sl_policy_v1_finetuned.pth",  # Finetuned
+        "models/sl_policy_v1_base.pth"        # Base
     ]
     
-    model_path = "models/sl_policy_v1_base.pth" # Fallback
+    model_path = "models/sl_policy_v1_base.pth" # Default
     for p in possible_models:
         if os.path.exists(p):
             model_path = p
@@ -105,7 +105,7 @@ def main():
             os.makedirs(log_dir, exist_ok=True)
             log_path = os.path.join(log_dir, f"game_{i+1}_vs_{name}.txt")
             hybrid_agent.save_logs(log_path)
-            # Clear logs for next game
+            # Clear logs
             hybrid_agent.logs = []
             
         avg_time = sum(times)/len(times) if times else 0

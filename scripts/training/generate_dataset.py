@@ -14,15 +14,12 @@ from backend.ai.minimax import AlphaBetaAgent
 from backend.ai.baselines import GreedyAgent
 
 def generate_dataset(num_games=100, save_path="data/sl_dataset.pkl"):
-    """
-    Generates a dataset of (BoardState, BestMove) pairs by pitting Strong AI against Greedy AI.
-    Only saves moves from the Winner (to learn winning patterns).
-    """
+    """Generate Board/Move dataset."""
     print(f"Generating Anti-Greedy Dataset ({num_games} games)...")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     
-    teacher = AlphaBetaAgent(depth=2, time_limit=0.2) # Fast teacher
-    dummy = GreedyAgent() # Punching bag
+    teacher = AlphaBetaAgent(depth=2, time_limit=0.2) # Fast
+    dummy = GreedyAgent()
     
     dataset = [] 
     
@@ -32,18 +29,14 @@ def generate_dataset(num_games=100, save_path="data/sl_dataset.pkl"):
         engine = GameEngine()
         
         # Randomize start player
-        # Even games: Teacher is P1
-        # Odd games: Teacher is P2
-        teacher_p = 1 if i % 2 == 0 else 2
+        # Random start
         
-        # Recording moves for this game: list of (player, input, outcome_move)
-        game_history = []
+        # Record records
         
         while not engine.game_over and engine.board.move_count < 225:
             p = engine.current_player
             
-            # Prepare Input (Always from perspective of current player)
-            board_input = np.zeros((15, 15), dtype=np.float32)
+            # Prepare Input
             for r in range(15):
                 for c in range(15):
                     v = engine.board.board[r][c]
@@ -57,8 +50,7 @@ def generate_dataset(num_games=100, save_path="data/sl_dataset.pkl"):
                 game_history.append((p, board_input, move))
             else:
                 move = dummy.get_move(engine.board, p)
-                # We don't learn from Greedy, unless we want to learn 'what not to do'? 
-                # No, just learn winning moves.
+                # Only teacher
             
             mx, my = move
             if mx == -1: break
@@ -66,7 +58,7 @@ def generate_dataset(num_games=100, save_path="data/sl_dataset.pkl"):
             
         # Game Over
         winner = engine.winner
-        # If teacher won, save teacher's moves
+        # Save if teacher won
         if winner == teacher_p:
             for pl, inp, (mx, my) in game_history:
                 if pl == teacher_p:

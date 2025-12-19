@@ -1,14 +1,4 @@
-"""Run Full Evaluation Pipeline
-
-Pipeline Steps:
-1. Run 5-Process Parallel Self-Play Evaluation
-2. Analyze evaluation results and generate statistics
-3. Generate visualization charts
-4. (Future) Generate HTML report
-
-Usage:
-    python scripts/run_full_evaluation.py --games-per-pair 10 --threads 5
-"""
+"""Run Full Evaluation Pipeline"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -20,15 +10,7 @@ from datetime import datetime
 
 
 def run_command(cmd: list, description: str) -> bool:
-    """Run a command and return success status.
-    
-    Args:
-        cmd: List of command arguments
-        description: Description of the command
-        
-    Returns:
-        True if successful, False otherwise
-    """
+    """Run command."""
     print(f"\n[RUN] {description}")
     
     try:
@@ -94,7 +76,7 @@ Examples:
     
     start_time = datetime.now()
     
-    # Define paths
+    # Paths
     base_output = args.output_dir.rstrip("/\\")
     eval_output = f"{base_output}/self_play/5threads"
     
@@ -103,7 +85,7 @@ Examples:
     print(f"Main Output Dir: {base_output}")
     print(f"Games Per Pair: {args.games_per_pair} x 2")
     
-    # Step 1: Run Evaluation
+    # 1. Evaluation
     if not args.skip_evaluation:
         success = run_command(
             [
@@ -122,7 +104,7 @@ Examples:
     else:
         print("\n[SKIP] Skipping Evaluation Step")
     
-    # Step 2: Data Analysis
+    # 2. Analysis
     success = run_command(
         [
             sys.executable,
@@ -136,7 +118,7 @@ Examples:
     if not success:
         print("\n[WARN] Analysis failed, but attempting visualization...")
     
-    # Step 3: Generate Visualizations
+    # 3. Visualizations
     success = run_command(
         [
             sys.executable,
@@ -150,7 +132,7 @@ Examples:
     if not success:
         print("\n[WARN] Visualization generation failed")
     
-    # Completion
+    # Done
     end_time = datetime.now()
     elapsed = (end_time - start_time).total_seconds()
     

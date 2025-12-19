@@ -1,7 +1,6 @@
 from backend.models.game_engine import GameEngine
 
-# Test: The same player (black) should win if they play 5 in a row in a line
-def test_black_five_in_row():
+# Test: Black wins with 5 in a row
     game = GameEngine(size=15, first_player=1)
 
     for x in range(5):
@@ -17,8 +16,7 @@ def test_black_five_in_row():
     print("  game_over =", status["game_over"])
     print("  history   =", status["move_history"])
 
-# Test: Making a move after game over should fail
-def test_illegal_move_after_game_over():
+# Test: Move illegal after game over
     game = GameEngine(size=15, first_player=1)
 
     # Create a 5-in-a-row for Black
@@ -37,8 +35,7 @@ def test_illegal_move_after_game_over():
 
     print("[test_illegal_move_after_game_over] PASS")
 
-# Test: Check if current_player switches correctly between 1 and 2 using make_move
-def test_turn_switching():
+# Test: Turn switching
     game = GameEngine(size=15, first_player=1)
 
     # Initial should be 1
@@ -58,8 +55,7 @@ def test_turn_switching():
 
     print("[test_turn_switching] PASS")
 
-# Test: Verify reset_game correctly resets a game but keeps stats
-def test_reset_game():
+# Test: Game reset
     game = GameEngine(size=15, first_player=1)
 
     # Let Black win one game

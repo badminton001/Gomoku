@@ -1,9 +1,4 @@
-"""
-Q-Learning (DQN) Agent and Environment.
-
-Uses Stable Baselines3 DQN to train/inference on Gomoku.
-Includes a custom Gym environment `GomokuEnv` for training loop.
-"""
+"""DQN Agent and Gym Environment for Gomoku."""
 import os
 import numpy as np
 import random
@@ -16,11 +11,7 @@ from backend.engine.board import Board
 from backend.ai.baselines import GreedyAgent
 
 class GomokuEnv(gym.Env):
-    """
-    Custom Gym Environment for Gomoku.
-    Observation: 15x15 Board state (0=Empty, 1=AI, 2=Opponent)
-    Action: Discrete(225) - Flattened board index.
-    """
+    """Custom OpenAI Gym env for Gomoku."""
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, board_size=15, opponent_list=None, reward_type='heuristic', invalid_penalty=-50.0):
@@ -64,10 +55,9 @@ class GomokuEnv(gym.Env):
                 current_reward = 0.0
                 done = True
         else:
-            # Heuristic Reward (Shaping)
+            # Heuristic Reward
             if self.reward_type == 'heuristic':
                 current_reward += self._calculate_heuristic_reward(x, y, player=1)
-                # Center bias in early game
                 if self.engine.board.move_count < 10:
                     mid = self.board_size // 2
                     if abs(x - mid) + abs(y - mid) < 4:
@@ -111,7 +101,7 @@ class GomokuEnv(gym.Env):
             elif count == 3: score += 5.0
             elif count == 2: score += 1.0
 
-        # Blocking (Defense)
+        # Defense
         board.board[x][y] = opponent
         for dx, dy in directions:
             count = 1
@@ -143,9 +133,7 @@ class QLearningAgent:
     def load_model(self):
         if os.path.exists(self.model_path + ".zip"):
             try:
-                # Force CPU to insure stability
                 self.model = DQN.load(self.model_path, device="cpu")
-                # print(f"DEBUG: DQN Model loaded from {self.model_path}") # Removed verbosity
             except Exception as e:
                 print(f"Warning: Failed to load DQN: {e}")
 
@@ -165,7 +153,6 @@ class QLearningAgent:
             x, y = divmod(int(action), 15)
             
             if not board.is_valid_move(x, y):
-                # Fallback on invalid prediction
                 return random_move(board)
                 
             return (x, y)

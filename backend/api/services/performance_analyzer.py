@@ -1,7 +1,4 @@
-"""Statistical Analysis Module
-
-Responsible for win rate statistics, response time analysis, and significance testing.
-"""
+"""Statistics Module for performance analysis."""
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -9,24 +6,15 @@ from typing import Dict, Tuple, List
 import itertools
 
 
-class StatisticalAnalyzer:
-    """Statistical Analyzer"""
+    """Performance Statistics Analyzer."""
     
     def __init__(self, data: pd.DataFrame):
-        """Initialize Statistical Analyzer
-        
-        Args:
-            data: Preprocessed data
-        """
+        """Init analyzer with data."""
         self.data = data
         print(f"[OK] Initialized analyzer with {len(data)} records")
     
     def calculate_win_rates(self) -> pd.DataFrame:
-        """Calculate win rates for each algorithm
-        
-        Returns:
-            Win rate statistics DataFrame
-        """
+        """Calculate win rates."""
         ai_names = sorted(set(self.data['player1'].unique()) | set(self.data['player2'].unique()))
         
         win_stats = []
@@ -67,11 +55,7 @@ class StatisticalAnalyzer:
         return df
     
     def calculate_response_times(self) -> pd.DataFrame:
-        """Calculate response time statistics
-        
-        Returns:
-            Response time statistics DataFrame
-        """
+        """Calculate response time stats."""
         ai_names = sorted(set(self.data['player1'].unique()) | set(self.data['player2'].unique()))
         
         time_stats = []
@@ -102,15 +86,7 @@ class StatisticalAnalyzer:
         return df
     
     def pairwise_significance_test(self, ai1: str, ai2: str) -> Tuple[float, float, str]:
-        """Pairwise algorithm significance test (Mann-Whitney U test)
-        
-        Args:
-            ai1: Name of algorithm 1
-            ai2: Name of algorithm 2
-            
-        Returns:
-            (Statistic, p-value, Conclusion)
-        """
+        """Mann-Whitney U test between two AIs."""
         # ai1 performance data (1=win, 0=loss)
         ai1_as_p1 = self.data[(self.data['player1'] == ai1) & (self.data['player2'] == ai2)]
         ai1_wins_p1 = (ai1_as_p1['winner'] == 'player1').astype(int)
@@ -149,11 +125,7 @@ class StatisticalAnalyzer:
         return statistic, p_value, conclusion
     
     def generate_matchup_matrix(self) -> pd.DataFrame:
-        """Generate matchup matrix (row vs column win rate)
-        
-        Returns:
-            Matchup matrix DataFrame
-        """
+        """Generate win rate matrix."""
         ai_names = sorted(set(self.data['player1'].unique()) | set(self.data['player2'].unique()))
         matrix = pd.DataFrame(0.0, index=ai_names, columns=ai_names)
         
@@ -187,11 +159,7 @@ class StatisticalAnalyzer:
         return matrix
     
     def run_all_pairwise_tests(self) -> pd.DataFrame:
-        """Run significance tests for all algorithm pairs
-        
-        Returns:
-            Significance test results DataFrame
-        """
+        """Run all pairwise significance tests."""
         ai_names = sorted(set(self.data['player1'].unique()) | set(self.data['player2'].unique()))
         
         results = []
@@ -216,14 +184,7 @@ class StatisticalAnalyzer:
         return df
     
     def calculate_elo_ratings(self, k_factor: float = 32.0) -> pd.DataFrame:
-        """Calculate ELO ratings (Chess rating system)
-        
-        Args:
-            k_factor: K factor, controls magnitude of rating changes
-            
-        Returns:
-            ELO ratings DataFrame
-        """
+        """Calculate ELO ratings."""
         ai_names = sorted(set(self.data['player1'].unique()) | set(self.data['player2'].unique()))
         
         # Initialize ELO ratings (all start at 1500)

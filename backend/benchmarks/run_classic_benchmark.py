@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# Corrected Imports from refactored codebase
+# Imports
 from backend.ai.minimax import AlphaBetaAgent
 from backend.ai.baselines import GreedyAgent, SearchMetrics, random_move
 from backend.ai.mcts import get_neighbor_moves
@@ -29,7 +29,7 @@ def load_ai_config(path: str):
             "alpha_beta": {"depth": 3, "distance": 2, "candidate_limit": 10, "use_eval_cache": True}
         }
 
-# Helper wrapper for Random to match interface
+# Wrapper for Random Agent
 class RandomWrapper:
     def __init__(self):
         self.last_metrics = None
@@ -43,7 +43,7 @@ def _measure(agent_name: str, board: Board, player: int, agent) -> Dict:
     elapsed = (time.perf_counter() - start) * 1000
 
     if agent_name == "Random":
-        # Synthesize metrics for the random baseline
+        # Baseline metrics
         metrics = SearchMetrics(
             elapsed_ms=elapsed,
             explored_nodes=1,
@@ -55,7 +55,7 @@ def _measure(agent_name: str, board: Board, player: int, agent) -> Dict:
         # Fallback if agent doesn't log metrics
         metrics = SearchMetrics(elapsed, 0, 0)
 
-    # Estimate quality using AlphaBeta's evaluator for consistency
+    # Estimate quality
     evaluator = AlphaBetaAgent(depth=1)
     if b.is_valid_move(move[0], move[1]):
         b.place_stone(move[0], move[1], player)
@@ -78,7 +78,7 @@ def run_benchmark() -> List[Dict]:
     cfg = load_ai_config("config/ai_config.json")
 
     base_board = Board(size=15) # Standard size
-    # Mid-game snapshot (Center area)
+    # Mid-game state
     positions = [
         (7, 7, 1),
         (7, 8, 2),
@@ -94,7 +94,7 @@ def run_benchmark() -> List[Dict]:
 
     greedy = GreedyAgent(distance=cfg["greedy"]["distance"])
     
-    # Simulate Minimax using AlphaBeta with depth 2
+    # Minimax (depth 2)
     minimax = AlphaBetaAgent(
         depth=cfg["minimax"]["depth"],
         time_limit=5.0

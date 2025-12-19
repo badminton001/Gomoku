@@ -3,21 +3,19 @@ from tkinter import messagebox
 import sys
 import os
 
-# --- Import Backend Logic ---
-# Corrected Imports from actual codebase structure
+# --- Import UI Components ---
+from .difficulty_control import DifficultyControlUI
+from .ai_recommender import AiRecommender
+
+# --- Import Backend ---
 from backend.engine.game_engine import GameEngine
 from backend.ai.minimax import AlphaBetaAgent
 from backend.ai.baselines import GreedyAgent
 from backend.ai.hybrid import HybridAgent
 
-# --- Import UI Components ---
-# Relative imports assume this file is in frontend/ui/
-from .difficulty_control import DifficultyControlUI
-from .ai_recommender import AiRecommender
-
 
 class BoardUI(tk.Frame):
-    def __init__(self, master=None, board_size=15, cell_size=40):
+    def __init__(self, master=None, board_size=15, cell_size=60):
         super().__init__(master)
         self.master = master
         self.board_size = board_size
@@ -26,10 +24,10 @@ class BoardUI(tk.Frame):
         # 1. Initialize Game Engine
         self.engine = GameEngine(size=board_size)
 
-        # 2. Initialize AI (Default Medium)
+        # 2. AI Agent
         self.ai_agent = AlphaBetaAgent(depth=2)
 
-        # 3. Player Identity (1=Black, 2=White). Default: Human is Black (1)
+        # 3. Player Identity (1=Black, 2=White)
         self.human_player = 1
 
         self.pack(fill="both", expand=True)
@@ -43,7 +41,7 @@ class BoardUI(tk.Frame):
         self.right_panel.pack_propagate(False)
 
         # --- Canvas ---
-        self.padding = 20 # Defined padding
+        self.padding = 20
         self.canvas_width = cell_size * (board_size) + 2 * self.padding
         self.canvas_height = cell_size * (board_size) + 2 * self.padding
         
@@ -56,7 +54,7 @@ class BoardUI(tk.Frame):
         )
         self.canvas.pack(padx=20, pady=20)
 
-        # --- Initialize Components ---
+        # --- Components ---
         self.recommender = AiRecommender(self.canvas, self.cell_size)
 
         self.control_panel = DifficultyControlUI(
@@ -76,7 +74,7 @@ class BoardUI(tk.Frame):
         self.info_label.pack(pady=10)
 
     def reset_game(self):
-        """Reset the game"""
+        """Reset game"""
         print("UI: Resetting game")
         self.engine.reset_game()
         self.canvas.delete("piece")
@@ -86,63 +84,77 @@ class BoardUI(tk.Frame):
         self.draw_grid()
 
         # Check who goes first
-        # Black (1) always goes first in Gomoku.
-        # If human_player is 2 (White), then AI (Black) must move now.
+        # Check who goes first
         if self.human_player == 2:
             print("UI: Human chose White. AI (Black) moves first.")
             self.after(500, self.computer_move)
 
     def handle_hint_request(self):
-        """Handle hint request"""
+        """Handle hint (Async)"""
         if self.engine.game_over:
             return
 
-        # Only allow hints if it's actually Human's turn
+        # Human turn only
         if self.engine.current_player != self.human_player:
             print("UI: It's not your turn!")
             return
 
-        print("UI: Thinking for Top-5 hints...")
+        self.info_label.config(text="AI Thinking for Hints...")
+        self.update() # Force update immediately
+
+        # Run in thread
+        import threading
+        t = threading.Thread(target=self._calculate_hint)
+        t.daemon = True
+        t.start()
+
+    def _calculate_hint(self):
+        """Hint worker"""
         try:
-            # Check if agent supports ordered candidates (AlphaBetaAgent usually does via helper or direct)
-            # In our current code, AlphaBetaAgent might not expose it publicly.
-            # But the user code assumes it does. We might need to mock or ensure it exists.
-            # For now, we try-except it.
-            if hasattr(self.ai_agent, 'get_top_moves'): # Use the method name I saw in gui.py before
+            candidates = []
+            # Top-5 API
+            if hasattr(self.ai_agent, 'get_top_moves'):
                  candidates = self.ai_agent.get_top_moves(
                         self.engine.board,
                         self.engine.current_player,
                         limit=5
                     )
-            elif hasattr(self.ai_agent, '_ordered_candidates'): # Legacy name
+            elif hasattr(self.ai_agent, '_ordered_candidates'):
                  candidates = self.ai_agent._ordered_candidates(
                         self.engine.board,
                         self.engine.current_player,
                         depth=1
                     )
-                 # Format: [(move, score)] -> need [(score, move)] for recommender?
-                 # Actually base AlphaBeta returns [(score, move)] usually
-            else:
-                # Fallback: Just get best move
-                move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
-                candidates = [(1.0, move)]
 
-            top_5_moves = candidates[:5]
-            if top_5_moves:
-                self.recommender.show_top5(top_5_moves)
+            if candidates:
+                # Show Top 5
+                top_5 = candidates[:5]
+                self.after(0, lambda: self.recommender.show_top5(top_5))
+                self.after(0, lambda: self.info_label.config(text="Hints AI: Here are the top moves."))
+            else:
+                # Fallback: Single move
+                move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
+                if move:
+                     self.after(0, lambda: self.recommender.show_hint(move[0], move[1]))
+                     self.after(0, lambda: self.info_label.config(text="Hints AI: Best move shown."))
+                else:
+                     self.after(0, lambda: self.info_label.config(text="Hints AI: No moves found."))
 
         except Exception as e:
-            print(f"AI Error: {e}")
-            move = self.ai_agent.get_move(self.engine.board, self.engine.current_player)
-            if move:
-                self.recommender.show_hint(move[0], move[1])
+            print(f"AI Hint Error: {e}")
+            self.after(0, lambda: messagebox.showerror("Hint Error", str(e)))
+            self.after(0, lambda: self.info_label.config(text="Hints AI: Error occurred."))
 
-    def handle_settings_change(self, color, diff):
-        """Handle settings change (Color or Difficulty)"""
-        print(f"Settings changed -> Color: {color}, Difficulty: {diff}")
+    def handle_settings_change(self, color, diff, time_str="5s"):
+        """Handle settings change"""
+        print(f"Settings changed -> Color: {color}, Difficulty: {diff}, Time: {time_str}")
+        
+        try:
+            time_limit = float(time_str.replace("s", ""))
+        except:
+            time_limit = 5.0
 
         # 1. Update Human Identity
-        # If user selected 'black', human is 1. If 'white', human is 2.
         self.human_player = 1 if color == 'black' else 2
 
         # 2. Update AI Difficulty
@@ -150,19 +162,27 @@ class BoardUI(tk.Frame):
             self.ai_agent = GreedyAgent(distance=2)
             print("AI: Switch to GreedyAgent")
         elif diff == 'medium':
-            self.ai_agent = AlphaBetaAgent(depth=2)
-            print("AI: Switch to AlphaBeta (Depth 2)")
+            self.ai_agent = AlphaBetaAgent(depth=2, time_limit=time_limit)
+            print(f"AI: Switch to AlphaBeta (Depth 2, {time_limit}s)")
         elif diff == 'hard':
-            self.ai_agent = AlphaBetaAgent(depth=3)
-            print("AI: Switch to AlphaBeta (Depth 3)")
+            self.ai_agent = AlphaBetaAgent(depth=3, time_limit=time_limit)
+            print(f"AI: Switch to AlphaBeta (Depth 3, {time_limit}s)")
         elif diff == 'expert':
-            # Try to load Hybrid model
-            model_path = "models/sl_model_kaggle.pth"
-            if not os.path.exists(model_path): model_path = "models/sl_model_v1.pth"
-            self.ai_agent = HybridAgent(model_path=model_path)
+            # Load Hybrid model
+            model_path = "models/sl_policy_v2.pth"
+            if not os.path.exists(model_path): 
+                model_path = "models/sl_model_kaggle.pth"
+                if not os.path.exists(model_path):
+                    model_path = "models/sl_model_v1.pth"
+            
+            # HybridAgent
+            self.ai_agent = HybridAgent(model_path=model_path) 
+            # Set time limit if supported
+            if hasattr(self.ai_agent, 'time_limit'):
+                 self.ai_agent.time_limit = time_limit
             print(f"AI: Switch to HybridAgent ({model_path})")
 
-        # 3. Reset Game to apply changes
+        # 3. Reset Game
         self.reset_game()
 
     def computer_move(self):
@@ -202,11 +222,10 @@ class BoardUI(tk.Frame):
         if self.engine.game_over:
             return
 
-        # --- IMPORTANT: Lock UI if it's AI's turn ---
+        # --- Lock UI for AI ---
         if self.engine.current_player != self.human_player:
             print("UI: Please wait for AI to move.")
             return
-        # --------------------------------------------
 
         self.recommender.clear_hint()
 
@@ -229,14 +248,16 @@ class BoardUI(tk.Frame):
             # 3. Check game over
             is_over = self.check_game_over()
 
-            # 4. Trigger AI (Always triggered now since PvP is gone)
+            # 4. Trigger AI
             if not is_over:
-                self.after(500, self.computer_move)
+                self.info_label.config(text="AI Thinking...")
+                self.update()
+                self.after(100, self.computer_move)
         else:
             print("Invalid move")
 
     def check_game_over(self):
-        """Check and handle game over"""
+        """Check game over"""
         if self.engine.game_over:
             winner = self.engine.winner
             if winner == 1:
@@ -267,10 +288,10 @@ class BoardUI(tk.Frame):
             self.canvas.create_line(start, margin, start, end + margin)
             
             # Labels
-            font = ("Arial", 8)
-            # Row Numbers (15 down to 1)
+            font = ("Arial", 12)
+            # Row Numbers
             self.canvas.create_text(margin/2, start, text=str(15-i), fill="black", font=font)
-            # Col Letters (A..O)
+            # Col Letters
             col_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'O', 'P']
             if i < len(col_labels):
                  self.canvas.create_text(start, margin/2, text=col_labels[i], fill="black", font=font)

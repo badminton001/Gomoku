@@ -1,8 +1,4 @@
-"""Single Match Visualization Tool
-
-Watch a single AI vs AI match with detailed move-by-move output
-Perfect for debugging slow algorithms like MCTS
-"""
+"""Match Visualization Tool"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -14,7 +10,7 @@ from backend.ai.mcts import MCTSAgent
 
 
 def print_board(board):
-    """Print current board state"""
+    """Print board."""
     print("\n   " + "  ".join([f"{i:2d}" for i in range(board.size)]))
     for i in range(board.size):
         row = f"{i:2d} "
@@ -30,7 +26,7 @@ def print_board(board):
 
 
 def watch_single_match(ai1_name, ai1, ai2_name, ai2):
-    """Watch a single match with visualization"""
+    """Watch match."""
     from backend.engine.board import Board
     import time
     
@@ -47,10 +43,10 @@ def watch_single_match(ai1_name, ai1, ai2_name, ai2):
         
         print(f"\nMove {move_count + 1}: {current_name} {symbol} thinking...")
         
-        # Show current board
+        # Show board
         print_board(board)
         
-        # Get move with timing
+        # Get move
         print(f"\n[WAIT] Waiting for {current_name} to move...", flush=True)
         start = time.time()
         
@@ -68,11 +64,11 @@ def watch_single_match(ai1_name, ai1, ai2_name, ai2):
                 print(f"\n[ERROR] Invalid move ({x},{y}) - {current_name} LOSES")
                 break
             
-            # Make move
+            # Move
             board.place_stone(x, y, current_player)
             print(f"\n[MOVE] {current_name} played ({x},{y}) in {elapsed:.2f}s")
             
-            # Check game result
+            # Check result
             result = board.get_game_result()
             if result == current_player:
                 print_board(board)
@@ -100,7 +96,7 @@ def watch_single_match(ai1_name, ai1, ai2_name, ai2):
 
 
 def main():
-    """Run visualization demo"""
+    """Run demo."""
     print(" SELF-PLAY VISUALIZATION DEMO")
     
     print("\nSelect match to watch:")

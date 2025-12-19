@@ -1,14 +1,14 @@
 import sys
 import os
 
-# --- Core Fix: Add project root to Python search path ---
-# Get current file directory (frontend)
+# --- Add project root to path ---
+# Current dir
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Get project root (Gomoku) - parent of frontend
+# Project root
 root_dir = os.path.dirname(current_dir)
-# Add root to sys.path so 'backend' can be found
+# Add root to sys.path
 sys.path.append(root_dir)
-# ---------------------------------------------------
+# --------------------------------
 
 import tkinter as tk
 from ui.board_ui import BoardUI
@@ -17,7 +17,7 @@ from ui.board_ui import BoardUI
 def main():
     root = tk.Tk()
     root.title("Gomoku - AI Battle")
-    root.geometry("900x750")  # Increase height slightly for status messages
+    root.geometry("900x750")  # Adjust height for status
 
     app = BoardUI(master=root)
 

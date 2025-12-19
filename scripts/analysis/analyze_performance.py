@@ -1,7 +1,5 @@
 """
 Performance Analysis Pipeline
-
-Data Preprocessing + Statistical Analysis + Performance Evaluation
 """
 import sys
 import os
@@ -15,27 +13,27 @@ from pathlib import Path
 from backend.services.performance_analyzer import StatisticalAnalyzer
 
 
-# Data Preprocessing
+# Preprocessing
 
 def preprocess_data(data_path: str) -> pd.DataFrame:
-    """Preprocess raw CSV data: Clean, Normalize, Validate."""
+    """Preprocess data."""
     print(f"\nLoading data from: {data_path}")
     df = pd.read_csv(data_path)
     original_count = len(df)
     
-    # 1. Data Cleaning
-    # Remove outliers (extreme moves count)
+    # 1. Cleaning
+    # Remove outliers
     q99 = df['total_moves'].quantile(0.99)
     df = df[df['total_moves'] <= q99]
     
-    # Remove timeout extremes (>60s)
+    # Remove timeouts
     df = df[df['player1_avg_time'] < 60]
     df = df[df['player2_avg_time'] < 60]
     
-    # Drop missing values
+    # Drop missing
     df = df.dropna()
     
-    # Validate winner column
+    # Validate winner
     valid_winners = ['player1', 'player2', 'draw']
     df = df[df['winner'].isin(valid_winners)]
     
@@ -43,7 +41,7 @@ def preprocess_data(data_path: str) -> pd.DataFrame:
     removed = original_count - cleaned_count
     print(f"Cleaned: {original_count} -> {cleaned_count} records (removed {removed})")
     
-    # 2. Feature Engineering
+    # 2. Features
     df['total_time'] = df['player1_avg_time'] + df['player2_avg_time']
     df['time_difference'] = np.abs(df['player1_avg_time'] - df['player2_avg_time'])
     df['faster_player'] = np.where(
@@ -57,7 +55,7 @@ def preprocess_data(data_path: str) -> pd.DataFrame:
     df['player2_won'] = (df['winner'] == 'player2').astype(int)
     df['is_draw'] = (df['winner'] == 'draw').astype(int)
     
-    # Categorize game length
+    # Categorize length
     df['game_length_category'] = pd.cut(
         df['total_moves'],
         bins=[0, 20, 40, 60, np.inf],
@@ -66,7 +64,7 @@ def preprocess_data(data_path: str) -> pd.DataFrame:
     
     print(f"Added {len(df.columns) - len(pd.read_csv(data_path).columns)} derived features")
     
-    # 3. Data Validation
+    # 3. Validation
     print(f"\nData Validation:")
     print(f"   Total records: {len(df)}")
     unique_algos = len(set(df['player1'].unique()) | set(df['player2'].unique()))
@@ -79,7 +77,7 @@ def preprocess_data(data_path: str) -> pd.DataFrame:
 
 
 def save_preprocessed_data(df: pd.DataFrame, output_path: str):
-    """Save clean data to CSV."""
+    """Save CSV."""
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False, encoding='utf-8-sig')
     print(f"\nSaved preprocessed data to {output_path}")
@@ -90,7 +88,7 @@ def save_preprocessed_data(df: pd.DataFrame, output_path: str):
 def main():
     print("\nPerformance Analysis Pipeline")
     
-    # 1. Find latest result file
+    # 1. Find latest
     data_files = glob("./data/results/self_play/aggregated/results_*.csv")
     
     if not data_files:
@@ -107,16 +105,16 @@ def main():
     # 3. Analysis
     analyzer = StatisticalAnalyzer(df)
     
-    # Win Rate Analysis
+    # Win Rates
     win_rates, matchup_matrix = analyzer.analyze_win_rates()
     
-    # Time Analysis
+    # Time Stats
     time_stats = analyzer.analyze_response_times()
     
-    # ELO Ratings
+    # ELO
     elo_ratings = analyzer.calculate_elo()
     
-    # 4. Save metrics
+    # 4. Save
     win_rates.to_csv("./data/results/win_rates.csv", index=False)
     time_stats.to_csv("./data/results/response_times.csv", index=False)
     matchup_matrix.to_csv("./data/results/matchup_matrix.csv")

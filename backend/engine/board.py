@@ -25,7 +25,7 @@ class Board:
     def is_empty(self, x: int, y: int) -> bool:
         return self.board[x][y] == 0
     
-    # -------- Forbidden Move Logic --------
+    # Forbidden Move Logic 
     _DIRS = [(1, 0), (0, 1), (1, 1), (1, -1)]
 
     def _max_run_len(self, x: int, y: int, dx: int, dy: int, player: int) -> int:
@@ -247,7 +247,7 @@ class Board:
         assert self.board[x][y] == 0
         self.board[x][y] = 1
 
-        # ---- 1. Five / Overline ----
+        # 1. Five / Overline
         has_five = False
         has_overline = False
         for dx, dy in self._DIRS:
@@ -265,13 +265,13 @@ class Board:
             self.board[x][y] = 0
             return True
 
-        # ---- 2. 4-4 Forbidden ----
+        # 2. 4-4 Forbidden
         fours = self._count_fours_from_move(x, y, 1)
         if fours >= 2:
             self.board[x][y] = 0
             return True
 
-        # ---- 3. 3-3 Forbidden ----
+        # 3. 3-3 Forbidden
         threes = self._find_threes_from_move(x, y, 1)
 
         if len(threes) < 2:

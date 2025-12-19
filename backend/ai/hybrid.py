@@ -1,11 +1,4 @@
-"""
-Hybrid AI Agent (Policy-Guided AlphaBeta).
-
-Combines:
-1.  Policy Network (SL Model) for intuitive candidate suggestions.
-2.  Alpha-Beta Search (Depth 2) for tactical verification.
-3.  Heuristic Defense blocks for immediate threats.
-"""
+"""Hybrid AI Agent combining Policy Network and Alpha-Beta Search."""
 import torch
 import numpy as np
 import time
@@ -16,9 +9,7 @@ from backend.ai.minimax import AlphaBetaAgent, SCORE_FIVE, SCORE_LIVE_4, SCORE_L
 from backend.ai.policy_network import Net
 
 class HybridAgent:
-    """
-    Hybrid Agent combining Policy Network with tactical search.
-    """
+    """Hybrid Agent combining Policy Network with tactical search."""
     def __init__(self, model_path: str = "models/sl_policy_v1_base.pth", device="cpu"):
         self.device = device
         self.model = Net().to(device)
@@ -45,13 +36,13 @@ class HybridAgent:
         log_entry = f"--- Turn {board.move_count // 2 + 1} (Player {player}) ---"
         self.logs.append(log_entry)
         
-        # 1. Immediate Win/Block Check
+        # 1. Win/Block Check
         win_kill = self._check_immediate_win_loss(board, player)
         if win_kill: 
             self.logs.append(f"Immediate Win/Block found: {win_kill}")
             return win_kill
 
-        # 2. Critical Defense (Block Live 4s/3s)
+        # 2. Critical Defense
         opp = 3 - player
         critical_blocks = self._get_critical_defenses(board, opp)
         
@@ -62,7 +53,7 @@ class HybridAgent:
             # 3. Generate Candidates (SL + Heuristic)
             candidates = self._get_candidates(board, player)
         
-        # 3b. Soft Defense (Threat Reduction)
+        # 3b. Soft Defense
         if not critical_blocks:
             current_threat = self.search_engine.evaluate_shape(board, opp)
             if current_threat >= SCORE_LIVE_3 * 0.8:
@@ -75,11 +66,11 @@ class HybridAgent:
                     if board.is_valid_move(x, y): return x, y
             return (-1, -1)
 
-        # 4. Deep Verification (AlphaBeta)
+        # 4. Deep Verification
         best_move = self._verify_candidates(board, candidates, player)
         self.logs.append(f"Selected Move: {best_move}")
         
-        # 5. Final Sanity Check
+        # 5. Final Check
         if not board.is_valid_move(best_move[0], best_move[1]):
             self.logs.append(f"[Panic] Invalid move {best_move}. Random search.")
             for x in range(15):
@@ -149,7 +140,7 @@ class HybridAgent:
         return best_move
 
     def _get_critical_defenses(self, board, opponent):
-        """Scan for opponent's threats (Live 3/4) that must be blocked."""
+        """Scan for opponent's threats that must be blocked."""
         blocks = set()
         size = board.size
         
@@ -164,7 +155,7 @@ class HybridAgent:
         return blocks
 
     def _is_live_four(self, board, x, y, color):
-        """Check if move creates a live four (011110) pattern."""
+        """Check if move creates a live four (011110)."""
         dirs = [(1,0), (0,1), (1,1), (1,-1)]
         size = 15
         p_str = str(color)

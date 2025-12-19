@@ -1,12 +1,4 @@
-"""
-MCTS (Monte Carlo Tree Search) Implementation for Gomoku.
-
-This module provides a pure Python implementation of MCTS optimized for Gomoku.
-It handles:
-- UCB1 selection strategy.
-- Simulation with distance-based pruning.
-- Backpropagation with correct player perspective.
-"""
+"""MCTS Implementation for Gomoku."""
 import copy
 import math
 import random
@@ -154,7 +146,7 @@ class MCTSNode:
         while node is not None:
             node.visits += 1
             
-            # Logic: If winner matches the player who made the move to reach this node (parent.player), it's a win.
+            # Check winner against node player or parent player
             if node.parent is None:
                 if winner == 3:
                     node.wins += 0.5
@@ -217,16 +209,7 @@ class MCTSAgent:
         return best_child.move if best_child.move else (-1, -1)
     
     def evaluate_board(self, board: Board, player: int) -> float:
-        """
-        Evaluate board position using MCTS simulations.
-        
-        Args:
-            board: Current board state  
-            player: Player to evaluate for (1 or 2)
-            
-        Returns:
-            float: Win rate estimate in [0, 1]
-        """
+        """Evaluate board position using MCTS simulations."""
         root = MCTSNode(copy.deepcopy(board), player)
         
         for _ in range(self.iteration_limit):
